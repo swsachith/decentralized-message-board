@@ -6,4 +6,7 @@ public class Constants {
     // Communication parameters
     public static final String HOST_IP = "HOST_IP";
     public static final String HOST_PORT = "HOST_PORT";
+
+    // Message Service Parameters
+    public static final String SEND_TIMEOUT = "SEND_TIMEOUT";
 }
