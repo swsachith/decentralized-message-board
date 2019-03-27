@@ -12,6 +12,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ClusterManager extends Thread {
     private static Logger logger = LoggerFactory.getLogger(ClusterManager.class);
@@ -21,10 +24,18 @@ public class ClusterManager extends Thread {
     private Config config;
     private String nodeID;
     private String clusterParentZK;
+    private ReadWriteLock lock;
+    private Lock readLock;
+    private Lock writeLock;
+    private Hash hash;
 
     public ClusterManager(String nodeID) throws Exception {
         this.config = new Config();
         this.nodeID = nodeID;
+        lock = new ReentrantReadWriteLock();
+        readLock = lock.readLock();
+        writeLock = lock.writeLock();
+        hash = new Hash();
         initialize();
     }
 
@@ -44,10 +55,14 @@ public class ClusterManager extends Thread {
 
     private void updateRing() throws Exception {
         logger.info("Updating my hash ring");
-        // todo: add a lock here
-        this.hashRing = new HashRing();
-        List<String> allNodes = zkManager.getAllChildren(clusterParentZK);
-        hashRing.addAll(allNodes);
+        try {
+            writeLock.lock();
+            this.hashRing = new HashRing();
+            List<String> allNodes = zkManager.getAllChildren(clusterParentZK);
+            hashRing.addAll(allNodes);
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     private void addClusterChangeListner(PathChildrenCache cache) {
@@ -65,7 +80,21 @@ public class ClusterManager extends Thread {
         cache.getListenable().addListener(listener);
     }
 
-    public HashRing getRing() {
-        return hashRing;
+    public String getNode(String key) {
+        try {
+            readLock.lock();
+            return hashRing.getValue(hash.getHash(key));
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    public int getClosestNode(String key) {
+        try {
+            readLock.lock();
+            return hashRing.getHashingNode(key);
+        } finally {
+            readLock.unlock();
+        }
     }
 }
