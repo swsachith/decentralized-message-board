@@ -66,13 +66,14 @@ public class ClusterManager extends Thread {
     }
 
     private void addClusterChangeListner(PathChildrenCache cache) {
-        logger.info("Cluster change detected");
         PathChildrenCacheListener listener = (curatorFramework, event) -> {
             switch (event.getType()) {
                 case CHILD_ADDED:
                     updateRing();
+                    break;
                 case CHILD_REMOVED:
                     updateRing();
+                    break;
                 default:
                     break;
             }
