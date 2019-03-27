@@ -11,12 +11,13 @@ import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class ClusterManager extends Thread {
+public class ClusterManager {
     private static Logger logger = LoggerFactory.getLogger(ClusterManager.class);
 
     private HashRing hashRing;
@@ -28,6 +29,7 @@ public class ClusterManager extends Thread {
     private Lock readLock;
     private Lock writeLock;
     private Hash hash;
+    private PathChildrenCache childrenCache;
 
     public ClusterManager(String nodeID) throws Exception {
         this.config = new Config();
@@ -39,22 +41,22 @@ public class ClusterManager extends Thread {
         initialize();
     }
 
-    public void initialize() throws Exception {
-        logger.info("Initializing the cluster");
+    private void initialize() throws Exception {
+        logger.info("Initializing the cluster. NodeID: " + nodeID);
         zkManager = new ZKManagerImpl();
         // add myself to the cluster
         clusterParentZK = this.config.getConfig(Constants.CLUSTER_RING_LOCATION);
         zkManager.create(clusterParentZK + "/" + nodeID, SerializationUtils.serialize(nodeID), CreateMode.EPHEMERAL);
         // update the hash ring
         updateRing();
-        PathChildrenCache childrenCache = zkManager.getPathChildrenCache(clusterParentZK);
+        childrenCache = zkManager.getPathChildrenCache(clusterParentZK);
         addClusterChangeListner(childrenCache);
         childrenCache.start();
         logger.info("Cluster initialization done!");
     }
 
     private void updateRing() throws Exception {
-        logger.info("Updating my hash ring");
+        logger.info("Cluster change detected! Updating my hash ring");
         try {
             writeLock.lock();
             this.hashRing = new HashRing();
@@ -90,12 +92,17 @@ public class ClusterManager extends Thread {
         }
     }
 
-    public int getClosestNode(String key) {
+    public String getClosestNode(String key) {
         try {
             readLock.lock();
-            return hashRing.getHashingNode(key);
+            return hashRing.getValue(hashRing.getHashingNode(key));
         } finally {
             readLock.unlock();
         }
+    }
+
+    public void stop() throws InterruptedException, IOException {
+        childrenCache.close();
+        zkManager.closeManager();
     }
 }

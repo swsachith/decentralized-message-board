@@ -4,17 +4,16 @@ import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
-import org.apache.zookeeper.*;
-import org.apache.zookeeper.data.Stat;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.ZooDefs;
 
-import java.io.IOException;
 import java.util.List;
 
 public class ZKManagerImpl implements ZKManager {
     private CuratorFramework zkClient;
     private Config config;
 
-    public ZKManagerImpl() throws IOException, InterruptedException {
+    public ZKManagerImpl(){
         config = new Config();
         zkClient = ZKConnection.getConnection(config.getConfig(Constants.ZK_CONN_STRING),
                 Integer.parseInt(config.getConfig(Constants.ZK_CONN_MAXRETRY_COUNT)),
@@ -35,16 +34,6 @@ public class ZKManagerImpl implements ZKManager {
     @Override
     public byte[] getData(String path) throws Exception {
         return zkClient.getData().forPath(path);
-    }
-
-    @Override
-    public Stat exists(String path) throws KeeperException, InterruptedException {
-        return null;
-    }
-
-    @Override
-    public void exists(String path, Watcher watcher, AsyncCallback.StatCallback callback) {
-
     }
 
     @Override

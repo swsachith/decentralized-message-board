@@ -14,10 +14,6 @@ public interface ZKManager {
 
     byte[] getData(String path) throws Exception;
 
-    Stat exists(String path) throws KeeperException, InterruptedException;
-
-    void exists(String path, Watcher watcher, AsyncCallback.StatCallback callback);
-
     void set(String path, byte[] data) throws Exception;
 
     void closeManager() throws InterruptedException;

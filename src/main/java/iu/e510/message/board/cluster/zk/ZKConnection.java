@@ -23,6 +23,7 @@ public class ZKConnection {
     public static void closeConnection() throws InterruptedException {
         if (client != null) {
             client.close();
+            client = null;
         }
     }
 }
