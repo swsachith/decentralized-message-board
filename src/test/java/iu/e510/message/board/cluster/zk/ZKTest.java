@@ -23,20 +23,20 @@ public class ZKTest {
     }
 
     @Test
-    public void testCreate() throws KeeperException, InterruptedException {
+    public void testCreate() throws Exception {
         String value = "Hello World";
         String testPath = "/test";
         zooKeeper.create(testPath, SerializationUtils.serialize(value), null);
-        String result = SerializationUtils.deserialize(zooKeeper.getData(testPath, false));
+        String result = SerializationUtils.deserialize(zooKeeper.getData(testPath));
         Assert.assertEquals(result, value);
     }
 
     @Test
-    public void testSet() throws KeeperException, InterruptedException {
+    public void testSet() throws Exception {
         String newValue = "Hello Distributed Systems!";
         String testPath = "/test";
         zooKeeper.set(testPath, SerializationUtils.serialize(newValue));
-        String result = SerializationUtils.deserialize(zooKeeper.getData(testPath, false));
+        String result = SerializationUtils.deserialize(zooKeeper.getData(testPath));
         Assert.assertEquals(result, newValue);
     }
 

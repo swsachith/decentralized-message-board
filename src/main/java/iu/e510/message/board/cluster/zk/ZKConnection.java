@@ -1,34 +1,28 @@
 package iu.e510.message.board.cluster.zk;
 
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
-
-import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 
 public class ZKConnection {
-    private static ZooKeeper zoo;
-    private static CountDownLatch connectionLatch = new CountDownLatch(1);
 
-    public static ZooKeeper getConnection(String zooHost, int timeout) throws IOException, InterruptedException {
-        if (zoo == null) {
-            zoo = new ZooKeeper(zooHost, timeout, new Watcher() {
-                @Override
-                public void process(WatchedEvent watchedEvent) {
-                    if (watchedEvent.getState() == Event.KeeperState.SyncConnected) {
-                        connectionLatch.countDown();
-                    }
-                }
-            });
-            connectionLatch.await();
+    private static CuratorFramework client;
+
+    public static CuratorFramework getConnection(String connString, int maxRetryCount, int retryInitialWait,
+                                                 int connectionTimeout, int sessionTimeout) {
+        if (client == null) {
+            CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder().connectString(connString)
+                    .retryPolicy(new ExponentialBackoffRetry(retryInitialWait, maxRetryCount))
+                    .connectionTimeoutMs(connectionTimeout).sessionTimeoutMs(sessionTimeout);
+            client = builder.build();
         }
-        return zoo;
+        client.start();
+        return client;
     }
 
     public static void closeConnection() throws InterruptedException {
-        if (zoo != null) {
-            zoo.close();
+        if (client != null) {
+            client.close();
         }
     }
 }
