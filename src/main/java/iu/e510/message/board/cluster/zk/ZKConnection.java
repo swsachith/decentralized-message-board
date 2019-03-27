@@ -15,8 +15,8 @@ public class ZKConnection {
                     .retryPolicy(new ExponentialBackoffRetry(retryInitialWait, maxRetryCount))
                     .connectionTimeoutMs(connectionTimeout).sessionTimeoutMs(sessionTimeout);
             client = builder.build();
+            client.start();
         }
-        client.start();
         return client;
     }
 

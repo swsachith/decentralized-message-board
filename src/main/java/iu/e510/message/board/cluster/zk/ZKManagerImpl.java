@@ -3,10 +3,12 @@ package iu.e510.message.board.cluster.zk;
 import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;
 
 import java.io.IOException;
+import java.util.List;
 
 public class ZKManagerImpl implements ZKManager {
     private CuratorFramework zkClient;
@@ -26,7 +28,8 @@ public class ZKManagerImpl implements ZKManager {
         if (mode == null) {
             mode = CreateMode.PERSISTENT;
         }
-        zkClient.create().withMode(mode).forPath(path, data);
+        zkClient.create().creatingParentContainersIfNeeded().withMode(mode).withACL(ZooDefs.Ids.OPEN_ACL_UNSAFE)
+                .forPath(path, data);
     }
 
     @Override
@@ -52,5 +55,15 @@ public class ZKManagerImpl implements ZKManager {
     @Override
     public void closeManager() throws InterruptedException {
         ZKConnection.closeConnection();
+    }
+
+    @Override
+    public List<String> getAllChildren(String path) throws Exception{
+        return zkClient.getChildren().forPath(path);
+    }
+
+    @Override
+    public PathChildrenCache getPathChildrenCache(String path) {
+        return new PathChildrenCache(zkClient, path, true);
     }
 }
