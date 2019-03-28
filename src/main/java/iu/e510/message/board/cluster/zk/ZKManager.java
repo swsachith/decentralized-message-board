@@ -20,5 +20,11 @@ public interface ZKManager {
 
     List<String> getAllChildren(String path) throws Exception;
 
+    /**
+     * Used to monitor the children of a given path.
+     * Ex: monitor changes in the /cluster
+     * @param path
+     * @return
+     */
     PathChildrenCache getPathChildrenCache(String path);
 }

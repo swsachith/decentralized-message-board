@@ -19,12 +19,20 @@ public class HashRing implements Serializable {
         this.replicas = replicas;
     }
 
+    /**
+     * Add all the given nodes to the ring
+     * @param nodes
+     */
     public void addAll(List<String> nodes) {
         for (String node : nodes) {
             add(node);
         }
     }
 
+    /**
+     * Add a given nodes to the ring along with the replicas
+     * @param node
+     */
     public void add(String node) {
         logger.debug("Adding node to the hash ring: " + node);
         for (int i = 0; i < replicas; i++) {
@@ -32,6 +40,10 @@ public class HashRing implements Serializable {
         }
     }
 
+    /**
+     * Remove a node from the ring. Removes all the replicas as well
+     * @param node
+     */
     public void remove(String node) {
         logger.debug("Removing node from the hash ring: " + node);
         for (int i = 0; i < replicas; i++) {
@@ -39,6 +51,11 @@ public class HashRing implements Serializable {
         }
     }
 
+    /**
+     * Get the closest node to which a key hashes to
+     * @param key
+     * @return
+     */
     public Integer getHashingNode(String key) {
         int hashValue = hash.getHash(key);
         Integer floorKey = ring.floorKey(hashValue);
@@ -57,6 +74,11 @@ public class HashRing implements Serializable {
         }
     }
 
+    /**
+     * Get the ip of a node in the ring
+     * @param key
+     * @return
+     */
     public String getValue(int key) {
         return ring.get(key);
     }

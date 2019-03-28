@@ -41,6 +41,14 @@ public class ClusterManager {
         initialize();
     }
 
+    /**
+     * Initializes the cluster with the following steps.
+     * Init the zookeeper client
+     * Create your ephemeral file at the /cluster location
+     * Update your ring
+     * Add a watch for the /cluster to get notified of node changes
+     * @throws Exception
+     */
     private void initialize() throws Exception {
         logger.info("Initializing the cluster. NodeID: " + nodeID);
         zkManager = new ZKManagerImpl();
@@ -55,6 +63,10 @@ public class ClusterManager {
         logger.info("Cluster initialization done!");
     }
 
+    /**
+     * Updates the Hash Ring with the latest changes.
+     * @throws Exception
+     */
     private void updateRing() throws Exception {
         logger.info("Cluster change detected! Updating my hash ring");
         try {
@@ -67,6 +79,7 @@ public class ClusterManager {
         }
     }
 
+    //todo: do not create a new ring. Update the current ring (adding and removing)
     private void addClusterChangeListner(PathChildrenCache cache) {
         PathChildrenCacheListener listener = (curatorFramework, event) -> {
             switch (event.getType()) {
@@ -83,6 +96,11 @@ public class ClusterManager {
         cache.getListenable().addListener(listener);
     }
 
+    /**
+     * Returns the ip of the node in the ring for the given key
+     * @param key
+     * @return
+     */
     public String getNode(String key) {
         try {
             readLock.lock();
@@ -92,6 +110,11 @@ public class ClusterManager {
         }
     }
 
+    /**
+     * Get the closest node ip for a given key.
+     * @param key
+     * @return
+     */
     //todo: hash values into replicas as well
     public String getClosestNode(String key) {
         try {
@@ -102,6 +125,11 @@ public class ClusterManager {
         }
     }
 
+    /**
+     * Stops the cluster manager
+     * @throws InterruptedException
+     * @throws IOException
+     */
     public void stop() throws InterruptedException, IOException {
         childrenCache.close();
         zkManager.closeManager();
