@@ -14,7 +14,6 @@ public class Hash implements Serializable {
     }
 
     public int getHash(String value) {
-        // todo: make it return only positive values?
-        return hashFunction.hashString(value).asInt();
+        return hashFunction.hashString(value).asInt() >>> 1;
     }
 }
