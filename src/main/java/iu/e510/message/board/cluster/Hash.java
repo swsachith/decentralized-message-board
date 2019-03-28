@@ -14,6 +14,7 @@ public class Hash implements Serializable {
     }
 
     public int getHash(String value) {
+        // shifting to make the hash result positive
         return hashFunction.hashString(value).asInt() >>> 1;
     }
 }
