@@ -11,10 +11,12 @@ public class HashRing implements Serializable {
     private static Logger logger = LoggerFactory.getLogger(HashRing.class);
     private TreeMap<Integer, String> ring;
     private Hash hash;
+    private int replicas;
 
-    public HashRing() {
+    public HashRing(int replicas) {
         hash = new Hash();
         ring = new TreeMap<>();
+        this.replicas = replicas;
     }
 
     public void addAll(List<String> nodes) {
@@ -23,15 +25,18 @@ public class HashRing implements Serializable {
         }
     }
 
-    //todo: extend this to support replicas (adding an index)
     public void add(String node) {
         logger.debug("Adding node to the hash ring: " + node);
-        ring.put(hash.getHash(node), node);
+        for (int i = 0; i < replicas; i++) {
+            ring.put(hash.getHash(node + "_" + i), node);
+        }
     }
 
     public void remove(String node) {
         logger.debug("Removing node from the hash ring: " + node);
-        ring.remove(hash.getHash(node));
+        for (int i = 0; i < replicas; i++) {
+            ring.remove(hash.getHash(node + "_" + i));
+        }
     }
 
     public Integer getHashingNode(String key) {

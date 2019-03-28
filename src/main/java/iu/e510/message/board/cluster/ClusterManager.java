@@ -59,7 +59,7 @@ public class ClusterManager {
         logger.info("Cluster change detected! Updating my hash ring");
         try {
             writeLock.lock();
-            this.hashRing = new HashRing();
+            this.hashRing = new HashRing(Integer.parseInt(config.getConfig(Constants.NUM_REPLICAS)));
             List<String> allNodes = zkManager.getAllChildren(clusterParentZK);
             hashRing.addAll(allNodes);
         } finally {
@@ -86,12 +86,13 @@ public class ClusterManager {
     public String getNode(String key) {
         try {
             readLock.lock();
-            return hashRing.getValue(hash.getHash(key));
+            return hashRing.getValue(hash.getHash(key + "_0"));
         } finally {
             readLock.unlock();
         }
     }
 
+    //todo: hash values into replicas as well
     public String getClosestNode(String key) {
         try {
             readLock.lock();
