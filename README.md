@@ -10,3 +10,11 @@ You can provide custom configurations via,
 ```bash
 java -jar -Dconfig.file=<CONFIG_FILE> iu.e510.message.board.jar
 ```
+
+#### Todo:
+##### Cluster configuration
+    -   Node joins, re-distribute data
+    -   Node Leaves, re-replciate data
+    
+##### Consistency
+    -   Handle consistency when posting
