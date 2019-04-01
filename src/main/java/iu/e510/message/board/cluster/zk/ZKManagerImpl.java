@@ -6,6 +6,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.data.Stat;
 
 import java.util.List;
 
@@ -44,6 +45,11 @@ public class ZKManagerImpl implements ZKManager {
     @Override
     public void closeManager() throws InterruptedException {
         ZKConnection.closeConnection();
+    }
+
+    @Override
+    public Stat exists(String path) throws Exception {
+        return zkClient.checkExists().forPath(path);
     }
 
     @Override

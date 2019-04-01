@@ -20,4 +20,5 @@ public class Constants {
     // Cluster configurations
     public static final String CLUSTER_RING_LOCATION = "CLUSTER_RING_LOCATION";
     public static final String NUM_REPLICAS = "NUM_REPLICAS";
+    public static final String DATA_LOCATION = "DATA_LOCATION";
 }

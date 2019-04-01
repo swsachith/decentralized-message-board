@@ -34,10 +34,10 @@ public class ClusterManager {
     public ClusterManager(String nodeID) throws Exception {
         this.config = new Config();
         this.nodeID = nodeID;
-        lock = new ReentrantReadWriteLock();
-        readLock = lock.readLock();
-        writeLock = lock.writeLock();
-        hash = new Hash();
+        this.lock = new ReentrantReadWriteLock();
+        this.readLock = this.lock.readLock();
+        this.writeLock = this.lock.writeLock();
+        this.hash = new Hash();
         initialize();
     }
 

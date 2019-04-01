@@ -12,9 +12,10 @@ import java.io.IOException;
 public class BaseZKTest {
     protected static ZKManager zooKeeper;
     protected static TestingServer zkServer;
+    protected static Config config;
     @BeforeSuite
     public static void setup() throws Exception {
-        Config config = new Config();
+        config = new Config();
         int zkHostPort = Integer.parseInt(config.getConfig("ZK_PORT_TEST"));
         zkServer = new TestingServer(zkHostPort, true);
         zooKeeper = new ZKManagerImpl();
