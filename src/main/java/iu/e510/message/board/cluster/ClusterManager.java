@@ -56,7 +56,7 @@ public class ClusterManager {
         clusterParentZK = this.config.getConfig(Constants.CLUSTER_RING_LOCATION);
         zkManager.create(clusterParentZK + "/" + nodeID, SerializationUtils.serialize(nodeID), CreateMode.EPHEMERAL);
         // update the hash ring
-        updateRing();
+        initRing();
         childrenCache = zkManager.getPathChildrenCache(clusterParentZK);
         addClusterChangeListner(childrenCache);
         childrenCache.start();
@@ -64,10 +64,10 @@ public class ClusterManager {
     }
 
     /**
-     * Updates the Hash Ring with the latest changes.
+     * Creates the Hash Ring with the current cluster configs.
      * @throws Exception
      */
-    private void updateRing() throws Exception {
+    private void initRing() throws Exception {
         logger.info("Cluster change detected! Updating my hash ring");
         try {
             writeLock.lock();
@@ -79,15 +79,17 @@ public class ClusterManager {
         }
     }
 
-    //todo: do not create a new ring. Update the current ring (adding and removing)
+    /**
+     * This is a watcher added to detect changes in the cluster. To capture nodes leaving and joining.
+     */
     private void addClusterChangeListner(PathChildrenCache cache) {
         PathChildrenCacheListener listener = (curatorFramework, event) -> {
             switch (event.getType()) {
                 case CHILD_ADDED:
-                    updateRing();
+                    addToRing(event.getData().getPath().substring(clusterParentZK.length() + 1));
                     break;
                 case CHILD_REMOVED:
-                    updateRing();
+                    removeFromRing(event.getData().getPath().substring(clusterParentZK.length() + 1));
                     break;
                 default:
                     break;
@@ -133,5 +135,30 @@ public class ClusterManager {
     public void stop() throws InterruptedException, IOException {
         childrenCache.close();
         zkManager.closeManager();
+    }
+
+
+    private void addToRing(String nodeID) {
+        try {
+            writeLock.lock();
+            logger.info("Adding Node: " + nodeID + " to the ring");
+            this.hashRing.add(nodeID);
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    private void removeFromRing(String nodeID) {
+        try {
+            writeLock.lock();
+            logger.info("Removing Node: " + nodeID + " from the ring");
+            this.hashRing.remove(nodeID);
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    private String getNodeFromPath(String path) {
+        return path.substring(path.lastIndexOf('/') + 1);
     }
 }
