@@ -14,9 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -36,7 +34,7 @@ public class ClusterManager implements LeaderLatchListener {
     private PathChildrenCache childrenCache;
     private LeaderLatch leaderLatch;
     private boolean leader;
-    private int replicas;
+    private int dataReplicas;
 
     public ClusterManager(String nodeID) throws Exception {
         this.config = new Config();
@@ -47,7 +45,7 @@ public class ClusterManager implements LeaderLatchListener {
         this.hash = new Hash();
         this.zkManager = new ZKManagerImpl();
         this.leader = false;
-        this.replicas = Integer.parseInt(config.getConfig(Constants.NODE_REPLICAS));
+        this.dataReplicas = Integer.parseInt(config.getConfig(Constants.DATA_REPLICAS));
         initialize();
     }
 
@@ -106,12 +104,15 @@ public class ClusterManager implements LeaderLatchListener {
             switch (event.getType()) {
                 case CHILD_ADDED:
                     addToRing(eventNodeID);
+                    if (leader) {
+                        redistributeDataNodeAdded(eventNodeID);
+                    }
                     break;
                 case CHILD_REMOVED:
                     // todo: handle race condition if the leader dies and this gets hit before the leader message
                     removeFromRing(eventNodeID);
                     if (leader) {
-                        initiateDataRedistribution(eventNodeID);
+                        redistributeDataNodeLeft(eventNodeID);
                     }
                     break;
                 default:
@@ -122,32 +123,46 @@ public class ClusterManager implements LeaderLatchListener {
     }
 
     /**
-     * Returns the ip of the node in the ring for the given key
-     * @param key
+     * Returns the ip of the node in the ring for the given ip
+     * @param ip
      * @return
      */
-    public String getNode(String key) {
+    public boolean exists(String ip) {
         try {
             readLock.lock();
-            return hashRing.getValue(hash.getHash(key + "_0"));
+            return hashRing.exists(ip);
         } finally {
             readLock.unlock();
         }
     }
 
     /**
-     * Get bucket nodes list for a given key. Returns all the replicas.
-     * @param key
+     * Get bucket nodes list for a given topic. Returns all the dataReplicas.
+     * @param topic
      * @return
      */
-    public Set<String> getHashingNodes(String key) {
+    public Set<String> getHashingNodes(String topic) {
         try {
             readLock.lock();
             Set<String> replicaSet = new HashSet<>();
-            for (int i = 0; i < replicas; i++) {
-                replicaSet.add(hashRing.getValue(hashRing.getHashingNode(key)));
+            for (int i = 0; i < dataReplicas; i++) {
+                replicaSet.add(hashRing.getValue(hashRing.getHashingNode(topic + "_" + i)));
             }
             return replicaSet;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    /**
+     * Returns a single bucket to which the value belongs to.
+     * @param value
+     * @return
+     */
+    public String getPreviousNode(String value) {
+        try {
+            readLock.lock();
+            return hashRing.getPreviousNode(value);
         } finally {
             readLock.unlock();
         }
@@ -196,12 +211,40 @@ public class ClusterManager implements LeaderLatchListener {
         leader = false;
     }
 
-    private void initiateDataRedistribution(String nodeID) throws Exception {
+    /**
+     * When a node goes down, reads the topics of that node, and create a inverted index of
+     * new ip -> topic combination.
+     * Then send out the message to all the ips with the list of topics.
+     * @param nodeID
+     * @throws Exception
+     */
+    private void redistributeDataNodeLeft(String nodeID) throws Exception {
         String dataPath = config.getConfig(Constants.DATA_LOCATION) + "/" + nodeID;
         HashSet<String> lostNodeTopics = getLostNodeTopics(dataPath);
+        Map<String, Set<String>> invertedIndex = new HashMap<>();
+        // For each topic, create an inverted index from ip -> topics
         for (String topic : lostNodeTopics) {
             logger.info("Re-distributing topic: " + topic);
+            Set<String> ips = getHashingNodes(topic);
+            for (String ip: ips) {
+                Set<String> topicsOfIP = invertedIndex.get(ip);
+                if (topicsOfIP == null) {
+                    topicsOfIP = new HashSet<>();
+                }
+                topicsOfIP.add(topic);
+                invertedIndex.put(ip, topicsOfIP);
+            }
         }
+        //todo: send the messages
+        logger.info("New redistribution topic map: " + invertedIndex.toString());
+    }
+
+    private void redistributeDataNodeAdded(String eventNodeID) {
+        logger.info("Node added. Hence redistributing data");
+        //todo: send this message
+        String hashingNode = getPreviousNode(eventNodeID);
+        logger.info(eventNodeID + " Would talk to " + hashingNode + " to get the required topics");
+        logger.info("Ring: "+ hashRing.getRing().toString());
     }
 
     /**

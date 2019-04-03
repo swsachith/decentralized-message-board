@@ -8,6 +8,6 @@ public class TestClusterManager extends BaseZKTest {
     public void testInit() throws Exception {
         String ip = "192.168.1.2";
         ClusterManager clusterManager = new ClusterManager(ip);
-        Assert.assertEquals(clusterManager.getNode(ip), ip);
+        Assert.assertTrue(clusterManager.exists(ip));
     }
 }
