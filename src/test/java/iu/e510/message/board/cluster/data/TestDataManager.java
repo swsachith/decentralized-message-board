@@ -9,9 +9,10 @@ import org.testng.annotations.Test;
 import java.util.HashSet;
 
 public class TestDataManager extends BaseZKTest {
+    private String ip = "192.168.1.2";
+
     @Test
     public void setData() throws Exception {
-        String ip = "192.168.1.2";
         DataManager dataManager = new DataManagerImpl(ip);
         dataManager.addData("bloomington", "hi");
         dataManager.addData("iu", "hi");
@@ -20,16 +21,6 @@ public class TestDataManager extends BaseZKTest {
         String dataStore = config.getConfig(Constants.DATA_LOCATION) + "/" + ip;
         HashSet<String> resultSet = SerializationUtils.deserialize(zooKeeper.getData(dataStore));
 
-        Assert.assertEquals(resultSet, dataManagerAllTopics);
-    }
-
-    @Test (dependsOnMethods = { "setData" })
-    public void testInitExisting() throws Exception {
-        String ip = "192.168.1.2";
-        DataManager diffDataManager = new DataManagerImpl(ip);
-        HashSet<String> dataManagerAllTopics = diffDataManager.getAllTopics();
-        String dataStore = config.getConfig(Constants.DATA_LOCATION) + "/" + ip;
-        HashSet<String> resultSet = SerializationUtils.deserialize(zooKeeper.getData(dataStore));
         Assert.assertEquals(resultSet, dataManagerAllTopics);
     }
 }

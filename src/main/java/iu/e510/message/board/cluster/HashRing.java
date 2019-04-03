@@ -11,12 +11,14 @@ public class HashRing implements Serializable {
     private static Logger logger = LoggerFactory.getLogger(HashRing.class);
     private TreeMap<Integer, String> ring;
     private Hash hash;
-    private int replicas;
+    private int nodeReplicas;
+    private boolean uniformRing;
 
-    public HashRing(int replicas) {
+    public HashRing(int nodeReplicas) {
         hash = new Hash();
         ring = new TreeMap<>();
-        this.replicas = replicas;
+        this.nodeReplicas = nodeReplicas;
+        this.uniformRing = nodeReplicas != 1;
     }
 
     /**
@@ -30,24 +32,32 @@ public class HashRing implements Serializable {
     }
 
     /**
-     * Add a given nodes to the ring along with the replicas
+     * Add a given nodes to the ring along with the nodeReplicas
      * @param node
      */
     public void add(String node) {
         logger.debug("Adding node to the hash ring: " + node);
-        for (int i = 0; i < replicas; i++) {
-            ring.put(hash.getHash(node + "_" + i), node);
+        if (uniformRing) {
+            for (int i = 0; i < nodeReplicas; i++) {
+                ring.put(hash.getHash(node + "_" + i), node);
+            }
+        } else {
+            ring.put(hash.getHash(node), node);
         }
     }
 
     /**
-     * Remove a node from the ring. Removes all the replicas as well
+     * Remove a node from the ring. Removes all the nodeReplicas as well
      * @param node
      */
     public void remove(String node) {
         logger.debug("Removing node from the hash ring: " + node);
-        for (int i = 0; i < replicas; i++) {
-            ring.remove(hash.getHash(node + "_" + i));
+        if (uniformRing) {
+            for (int i = 0; i < nodeReplicas; i++) {
+                ring.remove(hash.getHash(node + "_" + i));
+            }
+        } else {
+            ring.remove(hash.getHash(node));
         }
     }
 

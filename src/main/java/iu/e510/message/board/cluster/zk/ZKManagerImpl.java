@@ -58,7 +58,17 @@ public class ZKManagerImpl implements ZKManager {
     }
 
     @Override
+    public void delete(String path) throws Exception {
+        zkClient.delete().forPath(path);
+    }
+
+    @Override
     public PathChildrenCache getPathChildrenCache(String path) {
         return new PathChildrenCache(zkClient, path, true);
+    }
+
+    @Override
+    public CuratorFramework getZKClient() {
+        return zkClient;
     }
 }

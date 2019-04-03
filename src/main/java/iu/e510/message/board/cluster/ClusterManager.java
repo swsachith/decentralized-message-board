@@ -7,17 +7,21 @@ import iu.e510.message.board.util.Constants;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
+import org.apache.curator.framework.recipes.leader.LeaderLatch;
+import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class ClusterManager {
+public class ClusterManager implements LeaderLatchListener {
     private static Logger logger = LoggerFactory.getLogger(ClusterManager.class);
 
     private HashRing hashRing;
@@ -30,6 +34,9 @@ public class ClusterManager {
     private Lock writeLock;
     private Hash hash;
     private PathChildrenCache childrenCache;
+    private LeaderLatch leaderLatch;
+    private boolean leader;
+    private int replicas;
 
     public ClusterManager(String nodeID) throws Exception {
         this.config = new Config();
@@ -38,6 +45,9 @@ public class ClusterManager {
         this.readLock = this.lock.readLock();
         this.writeLock = this.lock.writeLock();
         this.hash = new Hash();
+        this.zkManager = new ZKManagerImpl();
+        this.leader = false;
+        this.replicas = Integer.parseInt(config.getConfig(Constants.NODE_REPLICAS));
         initialize();
     }
 
@@ -51,15 +61,23 @@ public class ClusterManager {
      */
     private void initialize() throws Exception {
         logger.info("Initializing the cluster. NodeID: " + nodeID);
-        zkManager = new ZKManagerImpl();
+
         // add myself to the cluster
         clusterParentZK = this.config.getConfig(Constants.CLUSTER_RING_LOCATION);
         zkManager.create(clusterParentZK + "/" + nodeID, SerializationUtils.serialize(nodeID), CreateMode.EPHEMERAL);
+
         // update the hash ring
         initRing();
+
+        // monitoring the node joining and removal
         childrenCache = zkManager.getPathChildrenCache(clusterParentZK);
         addClusterChangeListner(childrenCache);
         childrenCache.start();
+
+        // adding the leader election latch
+        leaderLatch = new LeaderLatch(zkManager.getZKClient(), config.getConfig(Constants.LEADER_PATH), nodeID);
+        leaderLatch.addListener(this);
+        leaderLatch.start();
         logger.info("Cluster initialization done!");
     }
 
@@ -71,7 +89,7 @@ public class ClusterManager {
         logger.info("Cluster change detected! Updating my hash ring");
         try {
             writeLock.lock();
-            this.hashRing = new HashRing(Integer.parseInt(config.getConfig(Constants.NUM_REPLICAS)));
+            this.hashRing = new HashRing(Integer.parseInt(config.getConfig(Constants.NODE_REPLICAS)));
             List<String> allNodes = zkManager.getAllChildren(clusterParentZK);
             hashRing.addAll(allNodes);
         } finally {
@@ -84,12 +102,17 @@ public class ClusterManager {
      */
     private void addClusterChangeListner(PathChildrenCache cache) {
         PathChildrenCacheListener listener = (curatorFramework, event) -> {
+            String eventNodeID = event.getData().getPath().substring(clusterParentZK.length() + 1);
             switch (event.getType()) {
                 case CHILD_ADDED:
-                    addToRing(event.getData().getPath().substring(clusterParentZK.length() + 1));
+                    addToRing(eventNodeID);
                     break;
                 case CHILD_REMOVED:
-                    removeFromRing(event.getData().getPath().substring(clusterParentZK.length() + 1));
+                    // todo: handle race condition if the leader dies and this gets hit before the leader message
+                    removeFromRing(eventNodeID);
+                    if (leader) {
+                        initiateDataRedistribution(eventNodeID);
+                    }
                     break;
                 default:
                     break;
@@ -113,15 +136,18 @@ public class ClusterManager {
     }
 
     /**
-     * Get the closest node ip for a given key.
+     * Get bucket nodes list for a given key. Returns all the replicas.
      * @param key
      * @return
      */
-    //todo: hash values into replicas as well
-    public String getClosestNode(String key) {
+    public Set<String> getHashingNodes(String key) {
         try {
             readLock.lock();
-            return hashRing.getValue(hashRing.getHashingNode(key));
+            Set<String> replicaSet = new HashSet<>();
+            for (int i = 0; i < replicas; i++) {
+                replicaSet.add(hashRing.getValue(hashRing.getHashingNode(key)));
+            }
+            return replicaSet;
         } finally {
             readLock.unlock();
         }
@@ -158,7 +184,37 @@ public class ClusterManager {
         }
     }
 
-    private String getNodeFromPath(String path) {
-        return path.substring(path.lastIndexOf('/') + 1);
+    @Override
+    public void isLeader() {
+        logger.info("I'm the leader");
+        leader = true;
+    }
+
+    @Override
+    public void notLeader() {
+        logger.info("I'm not the leader");
+        leader = false;
+    }
+
+    private void initiateDataRedistribution(String nodeID) throws Exception {
+        String dataPath = config.getConfig(Constants.DATA_LOCATION) + "/" + nodeID;
+        HashSet<String> lostNodeTopics = getLostNodeTopics(dataPath);
+        for (String topic : lostNodeTopics) {
+            logger.info("Re-distributing topic: " + topic);
+        }
+    }
+
+    /**
+     * Return lost node topics and delete that data node.
+     * @param nodePath
+     * @return
+     * @throws Exception
+     */
+    private HashSet<String> getLostNodeTopics(String nodePath) throws Exception {
+        HashSet<String> topics = SerializationUtils.deserialize(zkManager.getData(nodePath));
+        zkManager.delete(nodePath);
+        logger.info("Deleted data node for the lost node: " +
+                nodePath.substring(config.getConfig(Constants.DATA_LOCATION).length() + 1));
+        return topics;
     }
 }
