@@ -42,10 +42,6 @@ public class DataManagerImpl implements DataManager{
         this.myTopics = new HashSet<>();
         this.zkManager = new ZKManagerImpl();
         // Create my data node
-        initDataNode();
-    }
-
-    private void initDataNode() throws Exception {
         if (zkManager.exists(zkMyTopicStore) == null) {
             logger.info("No data store with my node ID found. Hence creating the new data store in ZK");
             zkManager.create(zkMyTopicStore, SerializationUtils.serialize(""), CreateMode.PERSISTENT);
