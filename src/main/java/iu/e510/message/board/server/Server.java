@@ -19,9 +19,9 @@ public class Server {
     private MessageService messageService;
 
 
-    public Server() throws Exception {
+    public Server(String nodeID) throws Exception {
 
-        this.id = "localhost:8083";
+        this.id = nodeID;
         this.config = new Config();
 
         this.messageService = new MessageServiceImpl("tcp://" + id, id);
