@@ -9,7 +9,7 @@ import iu.e510.message.board.util.Config;
 
 public class Main {
     public static void main(String[] args) {
-        String id = "localhost:8085";
+        String id = "localhost:8083";
         Config config = new Config();
         try {
             MessageService messageService = new MessageServiceImpl("tcp://" + id, id);

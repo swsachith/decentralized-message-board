@@ -2,6 +2,7 @@ package iu.e510.message.board.tom;
 
 import iu.e510.message.board.tom.common.LamportClock;
 import iu.e510.message.board.tom.common.Message;
+import iu.e510.message.board.tom.common.MessageType;
 import iu.e510.message.board.tom.core.*;
 import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
@@ -44,12 +45,12 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public void send_ordered(String message, List<String> recipients) {
+    public void send_ordered(String message, List<String> recipients, MessageType messageType) {
         // add yourself to the recipient list
         recipients.add(serverBindURI);
         // multicast the message to all the recipients
         int clock = this.clock.incrementAndGet();
-        Message msg = new Message(message, nodeID, clock, false);
+        Message msg = new Message(message, nodeID, clock, false, messageType);
         msg.setRecipients(recipients);
         for (String recipient : recipients) {
             Message response = messageSender.sendMessage(msg, recipient, this.clock.get());
@@ -70,9 +71,9 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public void send_unordered(String message, String recipient) {
+    public void send_unordered(String message, String recipient, MessageType messageType) {
         int clock = this.clock.incrementAndGet();
-        Message msg = new Message(message, nodeID, clock, true);
+        Message msg = new Message(message, nodeID, clock, true, messageType);
         Message response = messageSender.sendMessage(msg, recipient, this.clock.get());
         // null is returned only when it's a unicast message
         if (response != null) {
@@ -99,7 +100,8 @@ public class MessageServiceImpl implements MessageService {
 
         @Override
         public void deliverReleaseMessage(Message message) {
-            Message releaseMessage = new Message("Release", nodeID, clock.incrementAndGet(), false);
+            Message releaseMessage = new Message("Release", nodeID, clock.incrementAndGet(), false,
+                    message.getMessageType());
             releaseMessage.setRelease(message.getId());
 
             List<String> recipients = message.getRecipients();
@@ -131,7 +133,7 @@ public class MessageServiceImpl implements MessageService {
                         ". Updating clock to the receiver's clock: " + receivedClock);
             }
             // increment the clock for the message received.
-            int receiveClock = clock.incrementAndGet();
+            clock.incrementAndGet();
 
             // if message is an ack, do not resend
             if (message.isAck()) {
@@ -150,7 +152,8 @@ public class MessageServiceImpl implements MessageService {
         }
 
         private Message processUnicastMessage(Message message) {
-            logger.info("Received message: " + message.getMessage() + " from: " + message.getNodeID());
+            logger.info("Received message: " + message.getMessage() + " from: " + message.getNodeID() + " of type: " +
+                    message.getMessageType());
             return null;
         }
 
@@ -172,7 +175,7 @@ public class MessageServiceImpl implements MessageService {
             int sendClock = clock.incrementAndGet();
             logger.info("[pid:" + nodeID + "][clock:" + sendClock + "] Sending ack for message: "
                     + message.getId() + " to: " + message.getNodeID());
-            Message ack = new Message("Ack", nodeID, sendClock, true);
+            Message ack = new Message("Ack", nodeID, sendClock, true, message.getMessageType());
             ack.setAck(message.getId());
             return ack;
         }
