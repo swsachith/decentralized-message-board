@@ -9,5 +9,10 @@ public interface DataManager {
 
     void deleteData(String path) throws Exception;
 
+    void createTopic(String topic);
+
+    boolean existsTopic(String topic);
+
+
     HashSet<String> getAllTopics();
 }
