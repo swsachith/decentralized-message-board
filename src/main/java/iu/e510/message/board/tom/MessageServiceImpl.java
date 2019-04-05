@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeromq.ZContext;
 
-import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -105,6 +104,7 @@ public class MessageServiceImpl implements MessageService {
 
             List<String> recipients = message.getRecipients();
 
+            //todo: add delivering into data manager
             // deliver the message to yourself
             logger.info("[pid:" + nodeID + "][clock:" + clock.get() + "] Delivering message: "
                     + message.getId() + " to myself");
@@ -139,7 +139,7 @@ public class MessageServiceImpl implements MessageService {
                         " from: " + message.getNodeID());
                 return null;
             }
-
+            //todo: deliver messages here
             // handling the unicast vs multicast
             boolean unicast = message.isUnicast();
             if (unicast) {
