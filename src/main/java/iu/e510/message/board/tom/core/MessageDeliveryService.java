@@ -12,12 +12,12 @@ public class MessageDeliveryService extends Thread {
     private static Logger logger = LoggerFactory.getLogger(MessageDeliveryService.class);
     private AtomicBoolean running = new AtomicBoolean(false);
     private ConcurrentSkipListSet<Message> messageQueue;
-    private int myPid;
+    private String nodeID;
     private DeliveryHandler handler;
 
-    public MessageDeliveryService(ConcurrentSkipListSet<Message> messageQueue, int processID, DeliveryHandler handler) {
+    public MessageDeliveryService(ConcurrentSkipListSet<Message> messageQueue, String nodeID, DeliveryHandler handler) {
         this.messageQueue = messageQueue;
-        this.myPid = processID;
+        this.nodeID = nodeID;
         this.handler = handler;
     }
 
@@ -43,7 +43,7 @@ public class MessageDeliveryService extends Thread {
                 } catch (NoSuchElementException e) {
                     // race condition occurred. Was not empty before if condition, but was empty right after
                 }
-                if (first != null && first.getProcessID() == myPid && first.isAllAcked()) {
+                if (first != null && first.getNodeID() == nodeID && first.isAllAcked()) {
                     logger.info("My message at the head of the message queue, hence releasing! Current Queue: ");
                     logger.info(messageQueue.toString());
                     handler.deliverReleaseMessage(first);

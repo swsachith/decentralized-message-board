@@ -17,13 +17,11 @@ public class MessageReceiver extends Thread {
     private MessageHandler messageHandler;
     private String bindURL;
     private ZContext context;
-    private int processID;
 
-    public MessageReceiver(ZContext context, int processID, String bindURL, MessageHandler messageHandler) {
+    public MessageReceiver(ZContext context, String bindURL, MessageHandler messageHandler) {
         this.bindURL = bindURL;
         this.messageHandler = messageHandler;
         this.context = context;
-        this.processID = processID;
     }
 
     public boolean isRunning() {

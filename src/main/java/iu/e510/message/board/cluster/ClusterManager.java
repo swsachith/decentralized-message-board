@@ -2,6 +2,8 @@ package iu.e510.message.board.cluster;
 
 import iu.e510.message.board.cluster.zk.ZKManager;
 import iu.e510.message.board.cluster.zk.ZKManagerImpl;
+import iu.e510.message.board.tom.MessageService;
+import iu.e510.message.board.tom.common.MessageType;
 import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
 import org.apache.commons.lang3.SerializationUtils;
@@ -35,8 +37,9 @@ public class ClusterManager implements LeaderLatchListener {
     private LeaderLatch leaderLatch;
     private boolean leader;
     private int dataReplicas;
+    private MessageService messageService;
 
-    public ClusterManager(String nodeID) throws Exception {
+    public ClusterManager(String nodeID, MessageService messageService) throws Exception {
         this.config = new Config();
         this.nodeID = nodeID;
         this.lock = new ReentrantReadWriteLock();
@@ -46,6 +49,7 @@ public class ClusterManager implements LeaderLatchListener {
         this.zkManager = new ZKManagerImpl();
         this.leader = false;
         this.dataReplicas = Integer.parseInt(config.getConfig(Constants.DATA_REPLICAS));
+        this.messageService = messageService;
         initialize();
     }
 
@@ -101,6 +105,9 @@ public class ClusterManager implements LeaderLatchListener {
     private void addClusterChangeListner(PathChildrenCache cache) {
         PathChildrenCacheListener listener = (curatorFramework, event) -> {
             String eventNodeID = event.getData().getPath().substring(clusterParentZK.length() + 1);
+            if (eventNodeID.equals(nodeID)) {
+                return;
+            }
             switch (event.getType()) {
                 case CHILD_ADDED:
                     addToRing(eventNodeID);
@@ -224,7 +231,6 @@ public class ClusterManager implements LeaderLatchListener {
         Map<String, Set<String>> invertedIndex = new HashMap<>();
         // For each topic, create an inverted index from ip -> topics
         for (String topic : lostNodeTopics) {
-            logger.info("Re-distributing topic: " + topic);
             Set<String> ips = getHashingNodes(topic);
             for (String ip: ips) {
                 Set<String> topicsOfIP = invertedIndex.get(ip);
@@ -235,15 +241,19 @@ public class ClusterManager implements LeaderLatchListener {
                 invertedIndex.put(ip, topicsOfIP);
             }
         }
-        //todo: send the messages
+        for (String topicNodeID : invertedIndex.keySet()) {
+            messageService.send_unordered(invertedIndex.get(topicNodeID).toString(),
+                    messageService.getUrl(topicNodeID), MessageType.SYNC);
+        }
         logger.info("New redistribution topic map: " + invertedIndex.toString());
     }
 
     private void redistributeDataNodeAdded(String eventNodeID) {
         logger.info("Node added. Hence redistributing data");
-        //todo: send this message
         String hashingNode = getPreviousNode(eventNodeID);
         logger.info(eventNodeID + " Would talk to " + hashingNode + " to get the required topics");
+        messageService.send_unordered("Talk to: " + hashingNode, messageService.getUrl(eventNodeID),
+                MessageType.TRANSFER);
         logger.info("Ring: "+ hashRing.getRing().toString());
     }
 

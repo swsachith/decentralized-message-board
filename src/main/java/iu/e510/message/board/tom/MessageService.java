@@ -1,5 +1,7 @@
 package iu.e510.message.board.tom;
 
+import iu.e510.message.board.tom.common.MessageType;
+
 import java.util.List;
 
 public interface MessageService {
@@ -9,17 +11,22 @@ public interface MessageService {
      * @param message
      * @param recipients
      */
-    void send_ordered(String message, List<String> recipients);
+    void send_ordered(String message, List<String> recipients, MessageType messageType);
 
     /**
      * Point to Point message passing.
      * @param message
      * @param recipient
      */
-    void send_unordered(String message, String recipient);
+    void send_unordered(String message, String recipient, MessageType messageType);
 
     /**
      * Stop the Message Service.
      */
     void stop_service();
+
+    /**
+     * Get the connection url for a given port and ip (id)
+     */
+    String getUrl(String id);
 }
