@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -35,7 +36,7 @@ public class ClusterManager implements LeaderLatchListener {
     private Hash hash;
     private PathChildrenCache childrenCache;
     private LeaderLatch leaderLatch;
-    private boolean leader;
+    private AtomicBoolean leader;
     private int dataReplicas;
     private MessageService messageService;
 
@@ -47,7 +48,7 @@ public class ClusterManager implements LeaderLatchListener {
         this.writeLock = this.lock.writeLock();
         this.hash = new Hash();
         this.zkManager = new ZKManagerImpl();
-        this.leader = false;
+        this.leader = new AtomicBoolean();
         this.dataReplicas = Integer.parseInt(config.getConfig(Constants.DATA_REPLICAS));
         this.messageService = messageService;
         initialize();
@@ -111,14 +112,20 @@ public class ClusterManager implements LeaderLatchListener {
             switch (event.getType()) {
                 case CHILD_ADDED:
                     addToRing(eventNodeID);
-                    if (leader) {
+                    if (leader.get()) {
                         redistributeDataNodeAdded(eventNodeID);
                     }
                     break;
                 case CHILD_REMOVED:
-                    // todo: handle race condition if the leader dies and this gets hit before the leader message
                     removeFromRing(eventNodeID);
-                    if (leader) {
+                    // if the leader went down, and cluster does not still have a new leader,
+                    // wait till it elects a new leader
+                    // this is to fix the race condition where the this listener is hit before the leader listener
+                    if (leaderLatch.getLeader().getId().equals(eventNodeID)) {
+                        Thread.sleep(Integer.parseInt(config.getConfig(Constants.LEADER_ELECTION_DELAY)));
+                        logger.info("Master died. Waiting for new master to be elected.");
+                    }
+                    if (leader.get()) {
                         redistributeDataNodeLeft(eventNodeID);
                     }
                     break;
@@ -209,13 +216,13 @@ public class ClusterManager implements LeaderLatchListener {
     @Override
     public void isLeader() {
         logger.info("I'm the leader");
-        leader = true;
+        leader.compareAndSet(false, true);
     }
 
     @Override
     public void notLeader() {
         logger.info("I'm not the leader");
-        leader = false;
+        leader.compareAndSet(true, false);
     }
 
     /**

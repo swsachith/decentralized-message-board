@@ -23,4 +23,5 @@ public class Constants {
     public static final String DATA_REPLICAS = "DATA_REPLICAS";
     public static final String DATA_LOCATION = "DATA_LOCATION";
     public static final String LEADER_PATH = "LEADER_PATH";
+    public static final String LEADER_ELECTION_DELAY = "LEADER_ELECTION_DELAY";
 }
