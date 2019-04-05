@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public class Message implements Serializable, Comparable<Message> {
     private String message;
-    private int processID;
+    private String nodeID;
     private int clock;
     private boolean unicast;
     private String ack;
@@ -17,9 +17,9 @@ public class Message implements Serializable, Comparable<Message> {
     private List<String> recipients;
     private boolean allAcked;
 
-    public Message(String message, int processID, int clock, boolean unicast) {
+    public Message(String message, String nodeID, int clock, boolean unicast) {
         this.message = message;
-        this.processID = processID;
+        this.nodeID = nodeID;
         this.clock = clock;
         this.unicast = unicast;
         this.ack = "";
@@ -41,8 +41,8 @@ public class Message implements Serializable, Comparable<Message> {
         return message;
     }
 
-    public int getProcessID() {
-        return processID;
+    public String getNodeID() {
+        return nodeID;
     }
 
     public int getClock() {
@@ -95,7 +95,7 @@ public class Message implements Serializable, Comparable<Message> {
 
     @Override
     public String toString() {
-        return message + '\'' + " generated from pid=" + processID + " with clock: " + clock + " unicast: " + unicast;
+        return message + '\'' + " generated from pid=" + nodeID + " with clock: " + clock + " unicast: " + unicast;
     }
 
     @Override
@@ -122,15 +122,8 @@ public class Message implements Serializable, Comparable<Message> {
         } else if (this.clock < o.clock) {
             return -1;
         } else {
-            // if clock values are equal, precedence given to process with the smallest pid
-            if (this.getProcessID() < o.getProcessID()) {
-                return -1;
-            } else if (this.getProcessID() > o.getProcessID()) {
-                return 1;
-            } else {
-                // same message
-                return 0;
-            }
+            // if clock values are equal, precedence given to process with the smallest nodeID
+            return this.getNodeID().compareTo(o.getNodeID());
         }
     }
 }

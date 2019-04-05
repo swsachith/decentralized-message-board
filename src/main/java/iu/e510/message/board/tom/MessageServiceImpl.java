@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeromq.ZContext;
 
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -17,7 +16,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 public class MessageServiceImpl implements MessageService {
     private static Logger logger = LoggerFactory.getLogger(MessageServiceImpl.class);
 
-    private int processID;
+    private String nodeID;
     private String serverBindURI;
     private LamportClock clock;
     private MessageReceiver messageReceiver;
@@ -28,21 +27,21 @@ public class MessageServiceImpl implements MessageService {
     private ConcurrentSkipListSet<Message> messageQueue;
     private Config config;
 
-    public MessageServiceImpl(String serverBindURI) {
+    public MessageServiceImpl(String serverBindURI, String nodeID) {
         config = new Config();
         clock = LamportClock.getClock();
         this.serverBindURI = serverBindURI;
-        this.processID = getProcessID();
+        this.nodeID = nodeID;
         this.messageQueue = new ConcurrentSkipListSet<>();
         ZContext context = new ZContext();
         this.messageSender = new MessageSender(context, Integer.parseInt(config.getConfig(Constants.SEND_TIMEOUT)));
         this.messageHandler = new MessageHandlerImpl();
         this.deliveryHandler = new DeliveryHandlerImpl();
-        this.messageReceiver = new MessageReceiver(context, processID, this.serverBindURI, this.messageHandler);
+        this.messageReceiver = new MessageReceiver(context, this.serverBindURI, this.messageHandler);
         this.messageReceiver.start();
-        this.messageDeliveryService = new MessageDeliveryService(this.messageQueue, processID, this.deliveryHandler);
+        this.messageDeliveryService = new MessageDeliveryService(this.messageQueue, nodeID, this.deliveryHandler);
         messageDeliveryService.start();
-        logger.info("Started the messaging service with pid: " + processID);
+        logger.info("Started the messaging service with pid: " + nodeID);
     }
 
     @Override
@@ -51,7 +50,7 @@ public class MessageServiceImpl implements MessageService {
         recipients.add(serverBindURI);
         // multicast the message to all the recipients
         int clock = this.clock.incrementAndGet();
-        Message msg = new Message(message, processID, clock, false);
+        Message msg = new Message(message, nodeID, clock, false);
         msg.setRecipients(recipients);
         for (String recipient : recipients) {
             Message response = messageSender.sendMessage(msg, recipient, this.clock.get());
@@ -74,7 +73,7 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public void send_unordered(String message, String recipient) {
         int clock = this.clock.incrementAndGet();
-        Message msg = new Message(message, processID, clock, true);
+        Message msg = new Message(message, nodeID, clock, true);
         Message response = messageSender.sendMessage(msg, recipient, this.clock.get());
         // null is returned only when it's a unicast message
         if (response != null) {
@@ -92,22 +91,22 @@ public class MessageServiceImpl implements MessageService {
         }
     }
 
-    private int getProcessID() {
-        String processName = ManagementFactory.getRuntimeMXBean().getName();
-        return Integer.parseInt(processName.substring(0, processName.indexOf('@')));
+    @Override
+    public String getUrl(String id) {
+        return "tcp://" + id;
     }
 
     protected class DeliveryHandlerImpl implements DeliveryHandler {
 
         @Override
         public void deliverReleaseMessage(Message message) {
-            Message releaseMessage = new Message("Release", processID, clock.incrementAndGet(), false);
+            Message releaseMessage = new Message("Release", nodeID, clock.incrementAndGet(), false);
             releaseMessage.setRelease(message.getId());
 
             List<String> recipients = message.getRecipients();
 
             // deliver the message to yourself
-            logger.info("[pid:" + processID + "][clock:" + clock.get() + "] Delivering message: "
+            logger.info("[pid:" + nodeID + "][clock:" + clock.get() + "] Delivering message: "
                     + message.getId() + " to myself");
 
             // multicast the message to all the other recipients
@@ -128,7 +127,7 @@ public class MessageServiceImpl implements MessageService {
             // clock update
             if (receivedClock > clock.get()) {
                 clock.set(receivedClock);
-                logger.info("[pid=" + processID + "] [ClockUpdate]Received message from: " + message.getProcessID() +
+                logger.debug("[nodeID=" + nodeID + "] [ClockUpdate]Received message from: " + message.getNodeID() +
                         ". Updating clock to the receiver's clock: " + receivedClock);
             }
             // increment the clock for the message received.
@@ -136,32 +135,31 @@ public class MessageServiceImpl implements MessageService {
 
             // if message is an ack, do not resend
             if (message.isAck()) {
-                logger.info("[pid:" + processID + "][clock:" + clock.get() + "] Received Ack for: " + message.getAck() +
-                        " from: " + message.getProcessID());
+                logger.debug("[nodeID:" + nodeID + "][clock:" + clock.get() + "] Received Ack for: " + message.getAck() +
+                        " from: " + message.getNodeID());
                 return null;
             }
 
             // handling the unicast vs multicast
             boolean unicast = message.isUnicast();
             if (unicast) {
-                return processUnicastMessage(message, receiveClock);
+                return processUnicastMessage(message);
             } else {
                 return processMulticastMessage(message);
             }
         }
 
-        private Message processUnicastMessage(Message message, int receiveClock) {
-            logger.info("[pid:" + processID + "][clock:" + receiveClock + "] Received unicast message: "
-                    + message.getId() + " from: " + message.getProcessID());
+        private Message processUnicastMessage(Message message) {
+            logger.info("Received message: " + message.getMessage() + " from: " + message.getNodeID());
             return null;
         }
 
         private Message processMulticastMessage(Message message) {
             if (message.isRelease()) {
                 // if message is a release request, deliver it, don't have to reply
-                logger.info("[pid:" + processID + "][clock:" + clock.get() + "] Received release request. " +
+                logger.info("[nodeID:" + nodeID + "][clock:" + clock.get() + "] Received release request. " +
                         "Delivering multicast message: " + message.getRelease() + " with clock: " + message.getClock()
-                        + " from: " + message.getProcessID());
+                        + " from: " + message.getNodeID());
                 message.setId(message.getRelease());
                 messageQueue.remove(message);
                 logger.info("Message queue size: " + messageQueue.size());
@@ -172,9 +170,9 @@ public class MessageServiceImpl implements MessageService {
             logger.info("Added multicast message to the queue. Current queue size: " + messageQueue.size());
             // updating the clock for the reply event
             int sendClock = clock.incrementAndGet();
-            logger.info("[pid:" + processID + "][clock:" + sendClock + "] Sending ack for message: "
-                    + message.getId() + " to: " + message.getProcessID());
-            Message ack = new Message("Ack", processID, sendClock, true);
+            logger.info("[pid:" + nodeID + "][clock:" + sendClock + "] Sending ack for message: "
+                    + message.getId() + " to: " + message.getNodeID());
+            Message ack = new Message("Ack", nodeID, sendClock, true);
             ack.setAck(message.getId());
             return ack;
         }

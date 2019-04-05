@@ -22,4 +22,9 @@ public interface MessageService {
      * Stop the Message Service.
      */
     void stop_service();
+
+    /**
+     * Get the connection url for a given port and ip (id)
+     */
+    String getUrl(String id);
 }

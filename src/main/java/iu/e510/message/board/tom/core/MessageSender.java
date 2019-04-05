@@ -20,13 +20,10 @@ public class MessageSender {
     }
 
     public Message sendMessage(Message message, String recipient, int clock) {
-        String type = (message.isUnicast()) ? "unicast" : "multicast";
         if (message.isRelease()) {
-            logger.info("[pid:" + message.getProcessID() + "][clock:" + clock + "] Sending release message for: "
-                    + message.getRelease() + "\tto: " + recipient);
+            logger.info("Sending release message for: " + message.getRelease() + "\tto: " + recipient);
         } else {
-            logger.info("[pid:" + message.getProcessID() + "][clock:" + clock + "] Sending " + type +
-                    " message " + message.getId() + "\tto: " + recipient);
+            logger.info("Sending message to: " + recipient);
         }
         ZMQ.Socket socket = context.createSocket(SocketType.REQ);
         socket.setReceiveTimeOut(sendTimeout);
@@ -36,7 +33,7 @@ public class MessageSender {
             byte[] response = socket.recv(0);
             return SerializationUtils.deserialize(response);
         } catch (Exception e) {
-            logger.error("[pid:" + message.getProcessID() + "][clock:" + clock + "] Error sending message: "
+            logger.error("Error sending message: "
                     + message.getId() + "\tto: " + recipient + " " + e.getMessage(), e);
         }
         return null;
