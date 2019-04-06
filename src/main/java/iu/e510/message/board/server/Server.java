@@ -1,11 +1,17 @@
 package iu.e510.message.board.server;
 
 import iu.e510.message.board.cluster.ClusterManager;
-import iu.e510.message.board.cluster.data.DataManager;
+import iu.e510.message.board.cluster.data.SuperNodeDataManager;
 import iu.e510.message.board.cluster.data.DataManagerImpl;
 import iu.e510.message.board.tom.MessageService;
 import iu.e510.message.board.tom.MessageServiceImpl;
+import iu.e510.message.board.tom.common.Message;
 import iu.e510.message.board.util.Config;
+
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class Server {
     private String id;
@@ -14,9 +20,12 @@ public class Server {
 
     private ClusterManager clusterManager;
 
-    private DataManager dataManager;
+    private SuperNodeDataManager superNodeDataManager;
 
     private MessageService messageService;
+
+    private BlockingQueue<String> superNodeMsgQueue;
+    private Map<String, Message> superNodeMsgs;
 
 
     public Server(String nodeID) throws Exception {
@@ -24,18 +33,21 @@ public class Server {
         this.id = nodeID;
         this.config = new Config();
 
-        this.messageService = new MessageServiceImpl("tcp://" + id, id);
+        this.superNodeMsgQueue = new LinkedBlockingQueue<>();
+        this.superNodeMsgs = new ConcurrentHashMap<>();
+
+        this.messageService = new MessageServiceImpl("tcp://" + id, id, superNodeMsgQueue, superNodeMsgs);
         this.clusterManager = new ClusterManager(id, messageService);
-        this.dataManager = new DataManagerImpl(id);
+        this.superNodeDataManager = new DataManagerImpl(id, messageService, superNodeMsgQueue, superNodeMsgs);
 
 
     }
 
     public void run() throws Exception {
 
-        dataManager.addData("hapoi", "hi");
+        superNodeDataManager.addData("hapoi", "hi");
 
-        dataManager.addData("IN", "hi");
+        superNodeDataManager.addData("IN", "hi");
         System.out.println();
         System.out.println();
         int i = 0;

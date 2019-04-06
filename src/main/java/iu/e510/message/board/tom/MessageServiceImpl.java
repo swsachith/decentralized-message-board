@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.zeromq.ZContext;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public class MessageServiceImpl implements MessageService {
@@ -27,7 +29,11 @@ public class MessageServiceImpl implements MessageService {
     private ConcurrentSkipListSet<Message> messageQueue;
     private Config config;
 
-    public MessageServiceImpl(String serverBindURI, String nodeID) {
+    private BlockingQueue<String> superNodeMsgQueue;
+    private Map<String, Message> superNodeMsgs;
+
+    public MessageServiceImpl(String serverBindURI, String nodeID, BlockingQueue<String> superNodeMsgQueue,
+                              Map<String, Message> superNodeMsgs) {
         config = new Config();
         clock = LamportClock.getClock();
         this.serverBindURI = serverBindURI;
@@ -37,6 +43,10 @@ public class MessageServiceImpl implements MessageService {
         this.messageSender = new MessageSender(context, Integer.parseInt(config.getConfig(Constants.SEND_TIMEOUT)));
         this.messageHandler = new MessageHandlerImpl();
         this.deliveryHandler = new DeliveryHandlerImpl();
+
+        this.superNodeMsgQueue = superNodeMsgQueue;
+        this.superNodeMsgs = superNodeMsgs;
+
         this.messageReceiver = new MessageReceiver(context, this.serverBindURI, this.messageHandler);
         this.messageReceiver.start();
         this.messageDeliveryService = new MessageDeliveryService(this.messageQueue, nodeID, this.deliveryHandler);
@@ -154,6 +164,9 @@ public class MessageServiceImpl implements MessageService {
         private Message processUnicastMessage(Message message) {
             logger.info("Received message: " + message.getMessage() + " from: " + message.getNodeID() + " of type: " +
                     message.getMessageType());
+
+            commitMessage(message);
+
             return null;
         }
 
@@ -164,6 +177,9 @@ public class MessageServiceImpl implements MessageService {
                         "Delivering multicast message: " + message.getRelease() + " with clock: " + message.getClock()
                         + " from: " + message.getNodeID());
                 message.setId(message.getRelease());
+
+                commitMessage(message);
+
                 messageQueue.remove(message);
                 logger.info("Message queue size: " + messageQueue.size());
                 return null;
@@ -178,6 +194,16 @@ public class MessageServiceImpl implements MessageService {
             Message ack = new Message("Ack", nodeID, sendClock, true, message.getMessageType());
             ack.setAck(message.getId());
             return ack;
+        }
+
+        private void commitMessage(Message message){
+            logger.debug("Committing message: " + message.toString());
+            superNodeMsgs.put(message.getId(), message);
+            try {
+                superNodeMsgQueue.put(message.getId());
+            } catch (InterruptedException e) {
+                logger.error("Unable to access queue ", e);
+            }
         }
     }
 }

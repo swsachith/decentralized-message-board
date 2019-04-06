@@ -29,8 +29,9 @@ public class MessageSender {
         socket.setReceiveTimeOut(sendTimeout);
         try {
             socket.connect(recipient);
-            socket.send(SerializationUtils.serialize(message));
             byte[] response = socket.recv(0);
+            // todo: ********** WE CAN RECEIVE A SOME OTHER RESPONSE HERE ISNT IT????
+            socket.send(SerializationUtils.serialize(message));
             return SerializationUtils.deserialize(response);
         } catch (Exception e) {
             logger.error("Error sending message: "

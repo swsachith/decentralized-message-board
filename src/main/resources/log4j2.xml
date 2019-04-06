@@ -9,5 +9,9 @@
         <Root level="info">
             <AppenderRef ref="Console"/>
         </Root>
+        <Logger name="iu.e510.message.board" level="DEBUG" >
+            <AppenderRef ref="Console"/>
+        </Logger>
     </Loggers>
+
 </Configuration>

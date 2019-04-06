@@ -2,6 +2,8 @@ package iu.e510.message.board.cluster.data;
 
 import iu.e510.message.board.cluster.zk.ZKManager;
 import iu.e510.message.board.cluster.zk.ZKManagerImpl;
+import iu.e510.message.board.tom.MessageService;
+import iu.e510.message.board.tom.common.Message;
 import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
 import org.apache.commons.lang3.SerializationUtils;
@@ -10,12 +12,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
-import java.util.Set;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class DataManagerImpl implements DataManager{
+public class DataManagerImpl implements SuperNodeDataManager, ClientServerDataManager {
     private static Logger logger = LoggerFactory.getLogger(DataManagerImpl.class);
     private ReadWriteLock lock;
     private Lock readLock;
@@ -26,12 +30,30 @@ public class DataManagerImpl implements DataManager{
     private String myNodeID;
     private String zkMyTopicStore;
 
-    public DataManagerImpl(String nodeID) throws Exception {
+    private MessageService messageService;
+    private BlockingQueue<String> superNodeMsgQueue;
+    private Map<String, Message> superNodeMsgs;
+    private SuperNodeMsgExecutor superNodeMsgExecutor;
+
+    private AtomicBoolean consistency;
+
+    public DataManagerImpl(String nodeID, MessageService messageService,
+                           BlockingQueue<String> superNodeMsgQueue,
+                           Map<String, Message> superNodeMsgs) throws Exception {
         logger.info("Initializing the Data Manager!");
         this.config = new Config();
         this.myNodeID = nodeID;
         this.zkMyTopicStore = config.getConfig(Constants.DATA_LOCATION) + "/" + myNodeID;
+
+        this.consistency = new AtomicBoolean(true);
+        this.messageService = messageService;
+        this.superNodeMsgQueue = superNodeMsgQueue;
+        this.superNodeMsgs = superNodeMsgs;
+
+//        this.superNodeMsgExecutor = new SuperNodeMsgExecutor(this, superNodeMsgQueue, superNodeMsgs);
+
         initialize();
+
         logger.info("Data Manager init done. My topics: " + myTopics.toString());
     }
 
@@ -49,6 +71,8 @@ public class DataManagerImpl implements DataManager{
             logger.info("Existing topics found for my node ID. Hence restoring the configurations!");
             this.myTopics = SerializationUtils.deserialize(zkManager.getData(zkMyTopicStore));
         }
+
+//        this.superNodeMsgExecutor.start();
     }
 
     @Override
@@ -93,4 +117,15 @@ public class DataManagerImpl implements DataManager{
             readLock.unlock();
         }
     }
+
+    @Override
+    public void setConsistency(boolean consistency) {
+        this.consistency.set(consistency);
+    }
+
+    @Override
+    public boolean getConsistency() {
+        return this.consistency.get();
+    }
+
 }

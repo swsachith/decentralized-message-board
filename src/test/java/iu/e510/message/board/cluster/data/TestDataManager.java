@@ -13,10 +13,10 @@ public class TestDataManager extends BaseZKTest {
 
     @Test
     public void setData() throws Exception {
-        DataManager dataManager = new DataManagerImpl(ip);
-        dataManager.addData("bloomington", "hi");
-        dataManager.addData("iu", "hi");
-        HashSet<String> dataManagerAllTopics = dataManager.getAllTopics();
+        SuperNodeDataManager superNodeDataManager = new DataManagerImpl(ip, null, null, null);
+        superNodeDataManager.addData("bloomington", "hi");
+        superNodeDataManager.addData("iu", "hi");
+        HashSet<String> dataManagerAllTopics = superNodeDataManager.getAllTopics();
 
         String dataStore = config.getConfig(Constants.DATA_LOCATION) + "/" + ip;
         HashSet<String> resultSet = SerializationUtils.deserialize(zooKeeper.getData(dataStore));
