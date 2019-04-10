@@ -6,6 +6,7 @@ import java.util.ArrayList;
 public class DMBPosts implements Serializable {
     private int mPostId;
     private String mPostOwnerId;
+    private String mPostCategory;
     private String mPostTitle;
     private String mPostDescription;
     private ArrayList<String> mPostReplies;
@@ -35,6 +36,14 @@ public class DMBPosts implements Serializable {
 
     public void setPostTitle(String mPostTitle) {
         this.mPostTitle = mPostTitle;
+    }
+
+    public String getPostCategory() {
+        return mPostCategory;
+    }
+
+    public void setPostCategory(String mPostCategory) {
+        this.mPostCategory = mPostCategory;
     }
 
     public String getPostDescription() {

@@ -22,11 +22,11 @@ public class DBTest {
         DMBDatabase.createNewDatabase();
         /*create the posts table if not exists*/
         DMBDatabase.createTables();
-        DMBDatabase.addPostData("first post", "ninaad", "this is the first post");
-        DMBDatabase.addPostData("second post", "ninaad", "this is the second post");
+        DMBDatabase.addPostData("first post", "/r/iu", "ninaad", "this is the first post");
+        DMBDatabase.addPostData("second post", "/r/iu", "ninaad", "this is the second post");
         ArrayList<DMBPosts> postsArrayList;
 
-        postsArrayList = DMBDatabase.selectPostsData();
+        postsArrayList = DMBDatabase.getAllPostsDataArrayList();
         System.out.println(Collections.singletonList(postsArrayList));
 
 
@@ -34,8 +34,29 @@ public class DBTest {
             DMBDatabase.removePostData(postsArrayList.get(0).getPostId());
         }
 
-        postsArrayList = DMBDatabase.selectPostsData();
-        System.out.print(Collections.singletonList(postsArrayList));
+        DMBDatabase.addPostData("third post", "/r/iu", "ninaad", "this is the third post");
+        DMBDatabase.addPostData("fourth post", "/r/iu", "ninaad", "this is the fourth post");
+
+        byte [] databytes = DMBDatabase.getAllPostsDataByteArray();
+
+        postsArrayList = DMBDatabase.getAllPostsDataArrayList();
+
+        if (postsArrayList != null) {
+            for (int i = 0; i < postsArrayList.size(); i++){
+                DMBDatabase.removePostData(postsArrayList.get(i).getPostId());
+            }
+        }
+        postsArrayList = DMBDatabase.getAllPostsDataArrayList();
+        System.out.println("on removing all records");
+        System.out.println(Collections.singletonList(postsArrayList));
+
+        DMBDatabase.addAllPostsDataByteArray(databytes);
+
+        postsArrayList = DMBDatabase.getAllPostsDataArrayList();
+        System.out.println("after adding back all records");
+        System.out.println(Collections.singletonList(postsArrayList));
+
+        DMBDatabase.deleteTables();
 
     }
 
