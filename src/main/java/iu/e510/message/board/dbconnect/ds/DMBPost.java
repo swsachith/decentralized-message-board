@@ -1,12 +1,12 @@
-package iu.e510.message.board.serverDatabase.ds;
+package iu.e510.message.board.dbconnect.ds;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 
-public class DMBPosts implements Serializable {
+public class DMBPost implements Serializable {
     private int mPostId;
     private String mPostOwnerId;
-    private String mPostCategory;
+    private String mPostTopic;
     private String mPostTitle;
     private String mPostDescription;
     private ArrayList<String> mPostReplies;
@@ -38,12 +38,12 @@ public class DMBPosts implements Serializable {
         this.mPostTitle = mPostTitle;
     }
 
-    public String getPostCategory() {
-        return mPostCategory;
+    public String getPostTopic() {
+        return mPostTopic;
     }
 
-    public void setPostCategory(String mPostCategory) {
-        this.mPostCategory = mPostCategory;
+    public void setPostTopic(String mPostCategory) {
+        this.mPostTopic = mPostCategory;
     }
 
     public String getPostDescription() {
@@ -88,7 +88,7 @@ public class DMBPosts implements Serializable {
 
     @Override
     public String toString() {
-        return "DMBPosts{" +
+        return "DMBPost{" +
                 "mPostId=" + mPostId +
                 ", mPostOwnerId='" + mPostOwnerId + '\'' +
                 ", mPostTitle='" + mPostTitle + '\'' +
