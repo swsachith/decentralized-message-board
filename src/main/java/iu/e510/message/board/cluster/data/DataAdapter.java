@@ -1,9 +1,9 @@
 package iu.e510.message.board.cluster.data;
 
 /**
- * Data manager used to access local database data
+ * Adapter for data operations. Can be implemented for in-memory/ database operations
  */
-public interface LocalDataManager {
+public interface DataAdapter {
 
     byte[] getDataDump(String topic);
 

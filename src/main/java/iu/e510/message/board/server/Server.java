@@ -1,10 +1,9 @@
 package iu.e510.message.board.server;
 
 import iu.e510.message.board.cluster.ClusterManager;
-import iu.e510.message.board.cluster.data.LocalDataManager;
-import iu.e510.message.board.cluster.data.LocalDataManagerImpl;
-import iu.e510.message.board.cluster.data.SuperNodeDataManager;
-import iu.e510.message.board.cluster.data.SuperNodeDataManagerImpl;
+import iu.e510.message.board.cluster.data.DataAdapter;
+import iu.e510.message.board.cluster.data.MapBasedDataAdapter;
+import iu.e510.message.board.cluster.data.DistributedDataManager;
 import iu.e510.message.board.tom.MessageService;
 import iu.e510.message.board.tom.MessageServiceImpl;
 import iu.e510.message.board.tom.common.Message;
@@ -21,15 +20,15 @@ public class Server {
     private ClusterManager clusterManager;
 
     /* This will be used to access the database level */
-    private LocalDataManager localDataManager;
+    private DataAdapter dataAdapter;
 
     /* this will be used to access data between the supernodes*/
-    private SuperNodeDataManager superNodeDataManager;
+    private DistributedDataManager dataManager;
 
     /* message service to handle comms within the supernodes */
     private MessageService messageService;
 
-    private BlockingQueue<Message> superNodeMsgQueue;
+    private BlockingQueue<Message> internalMsgQueue;
 
 
     public Server(String nodeID) throws Exception {
@@ -37,25 +36,25 @@ public class Server {
         this.id = nodeID;
         this.config = new Config();
 
-        this.superNodeMsgQueue = new LinkedBlockingQueue<>();
+        this.internalMsgQueue = new LinkedBlockingQueue<>();
 
-        this.localDataManager = new LocalDataManagerImpl();
+        this.dataAdapter = new MapBasedDataAdapter();
 
         this.messageService = new MessageServiceImpl("tcp://" + id, id,
-                localDataManager, superNodeMsgQueue);
+                dataAdapter, internalMsgQueue);
 
         this.clusterManager = new ClusterManager(id, messageService);
 
-        this.superNodeDataManager = new SuperNodeDataManagerImpl(id, messageService,
-                localDataManager, superNodeMsgQueue);
+        this.dataManager = new DistributedDataManager(id, messageService,
+                dataAdapter, internalMsgQueue, clusterManager);
 
     }
 
     public void run() throws Exception {
 
-        superNodeDataManager.addData("hapoi", "hi");
+        dataManager.addData("OH", "ohio".getBytes());
 
-        superNodeDataManager.addData("IN", "hi");
+        dataManager.addData("IN", "indiana".getBytes());
         System.out.println();
         System.out.println();
         int i = 0;

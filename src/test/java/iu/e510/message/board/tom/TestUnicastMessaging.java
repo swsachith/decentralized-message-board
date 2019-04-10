@@ -2,6 +2,7 @@ package iu.e510.message.board.tom;
 
 import iu.e510.message.board.tom.common.LamportClock;
 import iu.e510.message.board.tom.common.MessageType;
+import iu.e510.message.board.tom.common.Payload;
 import org.testng.Assert;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
@@ -28,7 +29,8 @@ public class TestUnicastMessaging {
     @Test (dependsOnMethods = { "testInit" })
     public void testMessageSent() {
         clock.set(0);
-        messageService.send_unordered("hello world", unicastServerBindURL, MessageType.SYNC);
+        messageService.send_unordered(new Payload<>("hello world"), unicastServerBindURL,
+                MessageType.SYNC);
         int newClock = clock.get();
         Assert.assertEquals(newClock, 2);
     }

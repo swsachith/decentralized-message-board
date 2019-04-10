@@ -5,7 +5,6 @@ import iu.e510.message.board.cluster.zk.ZKManagerImpl;
 import iu.e510.message.board.tom.MessageService;
 import iu.e510.message.board.tom.common.MessageType;
 import iu.e510.message.board.tom.common.Payload;
-import iu.e510.message.board.tom.common.StringPayload;
 import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
 import org.apache.commons.lang3.SerializationUtils;
@@ -251,7 +250,7 @@ public class ClusterManager implements LeaderLatchListener {
             }
         }
         for (String topicNodeID : invertedIndex.keySet()) {
-            Payload syncReq = new StringPayload(nodeID, invertedIndex.get(topicNodeID).toString());
+            Payload syncReq = new Payload<>(nodeID, invertedIndex.get(topicNodeID).toString());
             messageService.send_unordered(syncReq, messageService.getUrl(topicNodeID), MessageType.SYNC);
         }
         logger.info("New redistribution topic map: " + invertedIndex.toString());
@@ -261,9 +260,8 @@ public class ClusterManager implements LeaderLatchListener {
         logger.info("Node added. Hence redistributing data");
         String hashingNode = getPreviousNode(eventNodeID);
         logger.info(eventNodeID + " Would talk to " + hashingNode + " to get the required topics");
-        messageService.send_unordered(new StringPayload("Talk to: " + hashingNode),
-                messageService.getUrl(eventNodeID),
-                MessageType.TRANSFER);
+        messageService.send_unordered(new Payload<>("Talk to: " + hashingNode),
+                messageService.getUrl(eventNodeID), MessageType.TRANSFER);
         logger.info("Ring: "+ hashRing.getRing().toString());
     }
 
