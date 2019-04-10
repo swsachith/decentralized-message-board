@@ -75,9 +75,15 @@ public class MessageServiceImpl implements MessageService {
         int clock = this.clock.incrementAndGet();
         Message msg = new Message(message, nodeID, clock, true, messageType);
         Message response = messageSender.sendMessage(msg, recipient, this.clock.get());
-        // null is returned only when it's a unicast message
+
+        // if response received, update the clock
         if (response != null) {
-            messageHandler.processMessage(response);
+            int responseClock = response.getClock();
+            if (responseClock > this.clock.get()) {
+                this.clock.set(responseClock);
+            }
+            // increment the clock for the message received.
+            this.clock.incrementAndGet();
         }
         return response;
     }
