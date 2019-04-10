@@ -1,8 +1,7 @@
 package iu.e510.message.board.tom;
 
-import iu.e510.message.board.tom.common.LamportClock;
-import iu.e510.message.board.tom.common.Message;
-import iu.e510.message.board.tom.common.MessageType;
+import iu.e510.message.board.cluster.data.LocalDataManager;
+import iu.e510.message.board.tom.common.*;
 import iu.e510.message.board.tom.core.*;
 import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
@@ -11,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.zeromq.ZContext;
 
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -29,11 +27,11 @@ public class MessageServiceImpl implements MessageService {
     private ConcurrentSkipListSet<Message> messageQueue;
     private Config config;
 
-    private BlockingQueue<String> superNodeMsgQueue;
-    private Map<String, Message> superNodeMsgs;
+    private BlockingQueue<Message> superNodeMsgQueue;
+    private LocalDataManager localDataManager;
 
-    public MessageServiceImpl(String serverBindURI, String nodeID, BlockingQueue<String> superNodeMsgQueue,
-                              Map<String, Message> superNodeMsgs) {
+    public MessageServiceImpl(String serverBindURI, String nodeID,
+                              LocalDataManager localDataManager, BlockingQueue<Message> superNodeMsgQueue) {
         config = new Config();
         clock = LamportClock.getClock();
         this.serverBindURI = serverBindURI;
@@ -44,12 +42,13 @@ public class MessageServiceImpl implements MessageService {
         this.messageHandler = new MessageHandlerImpl();
         this.deliveryHandler = new DeliveryHandlerImpl();
 
-        this.superNodeMsgQueue = superNodeMsgQueue;
-        this.superNodeMsgs = superNodeMsgs;
-
         this.messageReceiver = new MessageReceiver(context, this.serverBindURI, this.messageHandler);
-        this.messageReceiver.start();
         this.messageDeliveryService = new MessageDeliveryService(this.messageQueue, nodeID, this.deliveryHandler);
+
+        this.localDataManager = localDataManager;
+        this.superNodeMsgQueue = superNodeMsgQueue;
+
+        this.messageReceiver.start();
         messageDeliveryService.start();
         logger.info("Started the messaging service with pid: " + nodeID);
     }
@@ -60,7 +59,7 @@ public class MessageServiceImpl implements MessageService {
         recipients.add(serverBindURI);
         // multicast the message to all the recipients
         int clock = this.clock.incrementAndGet();
-        Message msg = new Message(message, nodeID, clock, false, messageType);
+        Message msg = new Message(new StringPayload(message), nodeID, clock, false, messageType);
         msg.setRecipients(recipients);
         for (String recipient : recipients) {
             Message response = messageSender.sendMessage(msg, recipient, this.clock.get());
@@ -81,7 +80,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public Message send_unordered(String message, String recipient, MessageType messageType) {
+    public Message send_unordered(Payload message, String recipient, MessageType messageType) {
         int clock = this.clock.incrementAndGet();
         Message msg = new Message(message, nodeID, clock, true, messageType);
         Message response = messageSender.sendMessage(msg, recipient, this.clock.get());
@@ -117,8 +116,8 @@ public class MessageServiceImpl implements MessageService {
 
         @Override
         public void deliverReleaseMessage(Message message) {
-            Message releaseMessage = new Message("Release", nodeID, clock.incrementAndGet(), false,
-                    message.getMessageType());
+            Message releaseMessage = new Message(new StringPayload("Release"), nodeID,
+                    clock.incrementAndGet(), false, message.getMessageType());
             releaseMessage.setRelease(message.getId());
 
             List<String> recipients = message.getRecipients();
@@ -169,12 +168,17 @@ public class MessageServiceImpl implements MessageService {
         }
 
         private Message processUnicastMessage(Message message) {
-            logger.info("Received message: " + message.getMessage() + " from: " + message.getNodeID() + " of type: " +
+            logger.info("Received message: " + message.getPayload() + " from: " + message.getNodeID() + " of type: " +
                     message.getMessageType());
 
-            commitMessage(message);
+            MessageType type = message.getMessageType();
 
-            return null;
+            if (type.equals(MessageType.TRANSFER) || type.equals(MessageType.SYNC)) {
+                asyncProcess(message);
+                return null;
+            } else {
+                return syncProcess(message);
+            }
         }
 
         private Message processMulticastMessage(Message message) {
@@ -185,7 +189,7 @@ public class MessageServiceImpl implements MessageService {
                         + " from: " + message.getNodeID());
                 message.setId(message.getRelease());
 
-                commitMessage(message);
+                asyncProcess(message);
 
                 messageQueue.remove(message);
                 logger.info("Message queue size: " + messageQueue.size());
@@ -198,19 +202,28 @@ public class MessageServiceImpl implements MessageService {
             int sendClock = clock.incrementAndGet();
             logger.info("[pid:" + nodeID + "][clock:" + sendClock + "] Sending ack for message: "
                     + message.getId() + " to: " + message.getNodeID());
-            Message ack = new Message("Ack", nodeID, sendClock, true, message.getMessageType());
+            Message ack = new Message(new StringPayload("Ack"), nodeID, sendClock, true,
+                    message.getMessageType());
             ack.setAck(message.getId());
             return ack;
         }
 
-        private void commitMessage(Message message){
-            logger.debug("Committing message: " + message.toString());
-            superNodeMsgs.put(message.getId(), message);
+        private void asyncProcess(Message message) {
+            logger.debug("Saving message for async process: " + message.toString());
             try {
-                superNodeMsgQueue.put(message.getId());
+                superNodeMsgQueue.put(message);
             } catch (InterruptedException e) {
                 logger.error("Unable to access queue ", e);
+                throw new RuntimeException("Unable to access queue ", e);
             }
+        }
+
+        private Message syncProcess(Message message) {
+            logger.debug("Processing message: " + message.toString());
+
+            return new Message(new StringPayload("Completed: " + message.toString()), nodeID,
+                    clock.get(), true,
+                    message.getMessageType());
         }
     }
 }

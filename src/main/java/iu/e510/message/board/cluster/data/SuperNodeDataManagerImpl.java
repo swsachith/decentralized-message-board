@@ -4,6 +4,7 @@ import iu.e510.message.board.cluster.zk.ZKManager;
 import iu.e510.message.board.cluster.zk.ZKManagerImpl;
 import iu.e510.message.board.tom.MessageService;
 import iu.e510.message.board.tom.common.Message;
+import iu.e510.message.board.tom.common.MessageType;
 import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
 import org.apache.commons.lang3.SerializationUtils;
@@ -12,15 +13,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class DataManagerImpl implements SuperNodeDataManager, ClientServerDataManager {
-    private static Logger logger = LoggerFactory.getLogger(DataManagerImpl.class);
+public class SuperNodeDataManagerImpl implements SuperNodeDataManager {
+    private static Logger logger = LoggerFactory.getLogger(SuperNodeDataManagerImpl.class);
     private ReadWriteLock lock;
     private Lock readLock;
     private Lock writeLock;
@@ -31,15 +31,15 @@ public class DataManagerImpl implements SuperNodeDataManager, ClientServerDataMa
     private String zkMyTopicStore;
 
     private MessageService messageService;
-    private BlockingQueue<String> superNodeMsgQueue;
-    private Map<String, Message> superNodeMsgs;
-    private SuperNodeMsgExecutor superNodeMsgExecutor;
+    private BlockingQueue<Message> superNodeMsgQueue;
+    private MsgExecutor superNodeMsgExecutor;
+
+    private LocalDataManager localDataManager;
 
     private AtomicBoolean consistency;
 
-    public DataManagerImpl(String nodeID, MessageService messageService,
-                           BlockingQueue<String> superNodeMsgQueue,
-                           Map<String, Message> superNodeMsgs) throws Exception {
+    public SuperNodeDataManagerImpl(String nodeID, MessageService messageService,
+                                    LocalDataManager localDataManager, BlockingQueue<Message> superNodeMsgQueue) throws Exception {
         logger.info("Initializing the Data Manager!");
         this.config = new Config();
         this.myNodeID = nodeID;
@@ -48,9 +48,10 @@ public class DataManagerImpl implements SuperNodeDataManager, ClientServerDataMa
         this.consistency = new AtomicBoolean(true);
         this.messageService = messageService;
         this.superNodeMsgQueue = superNodeMsgQueue;
-        this.superNodeMsgs = superNodeMsgs;
+        this.localDataManager = localDataManager;
 
-//        this.superNodeMsgExecutor = new SuperNodeMsgExecutor(this, superNodeMsgQueue, superNodeMsgs);
+        this.superNodeMsgExecutor = new MsgExecutor(this,
+                localDataManager, superNodeMsgQueue);
 
         initialize();
 
@@ -72,7 +73,7 @@ public class DataManagerImpl implements SuperNodeDataManager, ClientServerDataMa
             this.myTopics = SerializationUtils.deserialize(zkManager.getData(zkMyTopicStore));
         }
 
-//        this.superNodeMsgExecutor.start();
+        this.superNodeMsgExecutor.start();
     }
 
     @Override
@@ -127,5 +128,51 @@ public class DataManagerImpl implements SuperNodeDataManager, ClientServerDataMa
     public boolean getConsistency() {
         return this.consistency.get();
     }
+
+
+    class MsgExecutor extends Thread {
+
+        private SuperNodeDataManager superNodeDataManager;
+        private BlockingQueue<Message> superNodeMsgQueue;
+        private LocalDataManager localDataManager;
+
+        MsgExecutor(SuperNodeDataManager superNodeDataManager,
+                    LocalDataManager localDataManager,
+                    BlockingQueue<Message> superNodeMsgQueue) {
+            this.superNodeDataManager = superNodeDataManager;
+            this.superNodeMsgQueue = superNodeMsgQueue;
+            this.localDataManager = localDataManager;
+        }
+
+        @Override
+        public void run() {
+            try {
+                Message message = this.superNodeMsgQueue.take();
+                logger.info("Server is inconsistent");
+                this.superNodeDataManager.setConsistency(false);
+
+                if (message.getMessageType() == MessageType.SYNC) {
+                    logger.info("Processing SYNC msg: " + message);
+                    // todo: implement this --> take the topics from the message and get the
+                    //  data using the datamanager to talk to relevant nodes
+
+                    String topic = (String) message.getPayload().getContent();
+
+
+                } else if (message.getMessageType() == MessageType.TRANSFER) {
+                    logger.info("Processing TRANSFER msg: " + message);
+                    // todo: implement this --> take the topics from the message and send the
+                    //  relevant data to the destination node
+                }
+
+                this.superNodeDataManager.setConsistency(true);
+                logger.info("Server consistent again!");
+
+            } catch (InterruptedException e) {
+                logger.error("Unable to access the queue: ", e);
+            }
+        }
+    }
+
 
 }

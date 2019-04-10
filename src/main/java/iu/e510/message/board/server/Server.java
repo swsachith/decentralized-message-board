@@ -1,16 +1,16 @@
 package iu.e510.message.board.server;
 
 import iu.e510.message.board.cluster.ClusterManager;
+import iu.e510.message.board.cluster.data.LocalDataManager;
+import iu.e510.message.board.cluster.data.LocalDataManagerImpl;
 import iu.e510.message.board.cluster.data.SuperNodeDataManager;
-import iu.e510.message.board.cluster.data.DataManagerImpl;
+import iu.e510.message.board.cluster.data.SuperNodeDataManagerImpl;
 import iu.e510.message.board.tom.MessageService;
 import iu.e510.message.board.tom.MessageServiceImpl;
 import iu.e510.message.board.tom.common.Message;
 import iu.e510.message.board.util.Config;
 
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class Server {
@@ -20,12 +20,16 @@ public class Server {
 
     private ClusterManager clusterManager;
 
+    /* This will be used to access the database level */
+    private LocalDataManager localDataManager;
+
+    /* this will be used to access data between the supernodes*/
     private SuperNodeDataManager superNodeDataManager;
 
+    /* message service to handle comms within the supernodes */
     private MessageService messageService;
 
-    private BlockingQueue<String> superNodeMsgQueue;
-    private Map<String, Message> superNodeMsgs;
+    private BlockingQueue<Message> superNodeMsgQueue;
 
 
     public Server(String nodeID) throws Exception {
@@ -34,12 +38,16 @@ public class Server {
         this.config = new Config();
 
         this.superNodeMsgQueue = new LinkedBlockingQueue<>();
-        this.superNodeMsgs = new ConcurrentHashMap<>();
 
-        this.messageService = new MessageServiceImpl("tcp://" + id, id, superNodeMsgQueue, superNodeMsgs);
+        this.localDataManager = new LocalDataManagerImpl();
+
+        this.messageService = new MessageServiceImpl("tcp://" + id, id,
+                localDataManager, superNodeMsgQueue);
+
         this.clusterManager = new ClusterManager(id, messageService);
-        this.superNodeDataManager = new DataManagerImpl(id, messageService, superNodeMsgQueue, superNodeMsgs);
 
+        this.superNodeDataManager = new SuperNodeDataManagerImpl(id, messageService,
+                localDataManager, superNodeMsgQueue);
 
     }
 

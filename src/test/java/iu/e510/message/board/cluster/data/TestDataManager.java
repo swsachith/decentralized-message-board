@@ -13,7 +13,7 @@ public class TestDataManager extends BaseZKTest {
 
     @Test
     public void setData() throws Exception {
-        SuperNodeDataManager superNodeDataManager = new DataManagerImpl(ip, null, null, null);
+        SuperNodeDataManager superNodeDataManager = new SuperNodeDataManagerImpl(ip, null, null, null);
         superNodeDataManager.addData("bloomington", "hi");
         superNodeDataManager.addData("iu", "hi");
         HashSet<String> dataManagerAllTopics = superNodeDataManager.getAllTopics();

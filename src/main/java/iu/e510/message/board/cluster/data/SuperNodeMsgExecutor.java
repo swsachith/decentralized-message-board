@@ -5,42 +5,50 @@ import iu.e510.message.board.tom.common.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
 public class SuperNodeMsgExecutor extends Thread {
-/*    private static Logger logger = LoggerFactory.getLogger(SuperNodeMsgExecutor.class);
+    private static Logger logger = LoggerFactory.getLogger(SuperNodeMsgExecutor.class);
 
     private SuperNodeDataManager superNodeDataManager;
-    private BlockingQueue<String> superNodeMsgQueue;
-    private Map<String, Message> superNodeMsgs;
+    private BlockingQueue<Message> superNodeMsgQueue;
+    private LocalDataManager localDataManager;
 
-    public SuperNodeMsgExecutor(SuperNodeDataManager superNodeDataManager,
-                                BlockingQueue<String> superNodeMsgQueue,
-                                Map<String, Message> superNodeMsgs) {
+    SuperNodeMsgExecutor(SuperNodeDataManager superNodeDataManager,
+                         LocalDataManager localDataManager,
+                         BlockingQueue<Message> superNodeMsgQueue) {
         this.superNodeDataManager = superNodeDataManager;
         this.superNodeMsgQueue = superNodeMsgQueue;
-        this.superNodeMsgs = superNodeMsgs;
+        this.localDataManager = localDataManager;
     }
 
     @Override
     public void run() {
         try {
-            String messageId = this.superNodeMsgQueue.take();
-            Message message = this.superNodeMsgs.remove(messageId);
+            Message message = this.superNodeMsgQueue.take();
+            logger.info("Server is inconsistent");
+            this.superNodeDataManager.setConsistency(false);
 
             if (message.getMessageType() == MessageType.SYNC) {
                 logger.info("Processing SYNC msg: " + message);
                 // todo: implement this --> take the topics from the message and get the
                 //  data using the datamanager to talk to relevant nodes
+
+                String topic = (String) message.getPayload().getContent();
+
+
+
             } else if (message.getMessageType() == MessageType.TRANSFER) {
                 logger.info("Processing TRANSFER msg: " + message);
                 // todo: implement this --> take the topics from the message and send the
                 //  relevant data to the destination node
             }
 
+            this.superNodeDataManager.setConsistency(true);
+            logger.info("Server consistent again!");
+
         } catch (InterruptedException e) {
             logger.error("Unable to access the queue: ", e);
         }
-    }*/
+    }
 }
