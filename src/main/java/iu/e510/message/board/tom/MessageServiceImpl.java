@@ -71,7 +71,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public void send_unordered(String message, String recipient, MessageType messageType) {
+    public Message send_unordered(String message, String recipient, MessageType messageType) {
         int clock = this.clock.incrementAndGet();
         Message msg = new Message(message, nodeID, clock, true, messageType);
         Message response = messageSender.sendMessage(msg, recipient, this.clock.get());
@@ -79,6 +79,7 @@ public class MessageServiceImpl implements MessageService {
         if (response != null) {
             messageHandler.processMessage(response);
         }
+        return response;
     }
 
     @Override
