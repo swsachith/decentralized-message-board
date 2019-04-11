@@ -1,9 +1,12 @@
 package iu.e510.message.board.cluster.data;
 
+import iu.e510.message.board.cluster.ClusterManager;
 import iu.e510.message.board.cluster.zk.ZKManager;
 import iu.e510.message.board.cluster.zk.ZKManagerImpl;
 import iu.e510.message.board.tom.MessageService;
 import iu.e510.message.board.tom.common.Message;
+import iu.e510.message.board.tom.common.MessageType;
+import iu.e510.message.board.tom.common.Payload;
 import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
 import org.apache.commons.lang3.SerializationUtils;
@@ -12,15 +15,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class DataManagerImpl implements SuperNodeDataManager, ClientServerDataManager {
-    private static Logger logger = LoggerFactory.getLogger(DataManagerImpl.class);
+public class DistributedDataManager implements DataManager {
+    private static Logger logger = LoggerFactory.getLogger(DistributedDataManager.class);
     private ReadWriteLock lock;
     private Lock readLock;
     private Lock writeLock;
@@ -31,15 +34,19 @@ public class DataManagerImpl implements SuperNodeDataManager, ClientServerDataMa
     private String zkMyTopicStore;
 
     private MessageService messageService;
-    private BlockingQueue<String> superNodeMsgQueue;
-    private Map<String, Message> superNodeMsgs;
-    private SuperNodeMsgExecutor superNodeMsgExecutor;
+    private BlockingQueue<Message> internalMessageQueue;
+    private MesssageExecutor messsageExecutor;
+
+    private DataAdapter dataAdapter;
 
     private AtomicBoolean consistency;
 
-    public DataManagerImpl(String nodeID, MessageService messageService,
-                           BlockingQueue<String> superNodeMsgQueue,
-                           Map<String, Message> superNodeMsgs) throws Exception {
+    private ClusterManager clusterManager;
+
+    public DistributedDataManager(String nodeID, MessageService messageService,
+                                  DataAdapter dataAdapter,
+                                  BlockingQueue<Message> internalMessageQueue,
+                                  ClusterManager clusterManager) throws Exception {
         logger.info("Initializing the Data Manager!");
         this.config = new Config();
         this.myNodeID = nodeID;
@@ -47,10 +54,11 @@ public class DataManagerImpl implements SuperNodeDataManager, ClientServerDataMa
 
         this.consistency = new AtomicBoolean(true);
         this.messageService = messageService;
-        this.superNodeMsgQueue = superNodeMsgQueue;
-        this.superNodeMsgs = superNodeMsgs;
+        this.internalMessageQueue = internalMessageQueue;
+        this.dataAdapter = dataAdapter;
+        this.clusterManager = clusterManager;
 
-//        this.superNodeMsgExecutor = new SuperNodeMsgExecutor(this, superNodeMsgQueue, superNodeMsgs);
+        this.messsageExecutor = new MesssageExecutor();
 
         initialize();
 
@@ -72,11 +80,11 @@ public class DataManagerImpl implements SuperNodeDataManager, ClientServerDataMa
             this.myTopics = SerializationUtils.deserialize(zkManager.getData(zkMyTopicStore));
         }
 
-//        this.superNodeMsgExecutor.start();
+        this.messsageExecutor.start();
     }
 
     @Override
-    public void addData(String path, String data) throws Exception {
+    public void addData(String path, byte[] data) throws Exception {
         try {
             writeLock.lock();
             // write to ZK only if the topic is not already recorded
@@ -84,16 +92,36 @@ public class DataManagerImpl implements SuperNodeDataManager, ClientServerDataMa
                 myTopics.add(path);
                 zkManager.set(zkMyTopicStore, SerializationUtils.serialize(myTopics));
             }
-            //todo: store data here
+
+            // store data here
+            dataAdapter.putDataDump(path, data);
+
         } finally {
             writeLock.unlock();
         }
     }
 
     @Override
-    public boolean getData(String path) {
-        // todo: send data from the DB. Remove the following stub
+    public boolean hasData(String path) {
         return myTopics.contains(path);
+    }
+
+    @Override
+    public byte[] getData(String topic) {
+        // todo: send data from the DB. Remove the following stub
+        Set<String> nodes = clusterManager.getHashingNodes(topic);
+
+        logger.debug("Requesting data for: " + topic + " from: " + nodes);
+        for (String node : nodes) {
+            logger.debug("Talking to " + node);
+
+            Message response = messageService.send_unordered(new Payload<>(topic), node,
+                    MessageType.DATA_REQUEST);
+
+            if (response != null) return (byte[]) response.getPayload().getContent();
+        }
+
+        return null;
     }
 
     @Override
@@ -127,5 +155,48 @@ public class DataManagerImpl implements SuperNodeDataManager, ClientServerDataMa
     public boolean getConsistency() {
         return this.consistency.get();
     }
+
+
+    class MesssageExecutor extends Thread {
+        @Override
+        public void run() {
+            try {
+                Message message = internalMessageQueue.take();
+                logger.info("Server is inconsistent");
+                setConsistency(false);
+
+                if (message.getMessageType() == MessageType.SYNC) {
+                    logger.info("Processing SYNC msg: " + message);
+
+                    String topic = (String) message.getPayload().getContent();
+
+                    if (hasData(topic)) {
+                        logger.info("Nothing to do! Data available locally for: " + topic);
+                    } else {
+                        logger.info("Requesting data from the cluster for: " + topic);
+                        byte[] data = getData(topic);
+                        dataAdapter.putDataDump(topic, data);
+                    }
+
+
+                } else if (message.getMessageType() == MessageType.TRANSFER) {
+                    logger.info("Processing TRANSFER msg: " + message);
+                    // todo: implement this --> take the topics from the message and send the
+                    //  relevant data to the destination node
+
+
+                } else {
+                    throw new RuntimeException("Unknown message type: " + message);
+                }
+
+                setConsistency(true);
+                logger.info("Server consistent again!");
+
+            } catch (InterruptedException e) {
+                logger.error("Unable to access the queue: ", e);
+            }
+        }
+    }
+
 
 }

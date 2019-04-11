@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 public class Message implements Serializable, Comparable<Message> {
-    private String message;
+    private Payload message;
     private String nodeID;
     private int clock;
     private boolean unicast;
@@ -18,7 +18,8 @@ public class Message implements Serializable, Comparable<Message> {
     private boolean allAcked;
     private MessageType messageType;
 
-    public Message(String message, String nodeID, int clock, boolean unicast, MessageType messageType) {
+    public Message(Payload message, String nodeID, int clock, boolean unicast,
+                   MessageType messageType) {
         this.message = message;
         this.nodeID = nodeID;
         this.clock = clock;
@@ -47,7 +48,7 @@ public class Message implements Serializable, Comparable<Message> {
         this.allAcked = allAcked;
     }
 
-    public String getMessage() {
+    public Payload getPayload() {
         return message;
     }
 
@@ -105,7 +106,8 @@ public class Message implements Serializable, Comparable<Message> {
 
     @Override
     public String toString() {
-        return message + '\'' + " generated from pid=" + nodeID + " with clock: " + clock + " unicast: " + unicast;
+        return message.toString() + '\'' + " generated from pid=" + nodeID + " with clock: " + clock + " " +
+                "unicast: " + unicast;
     }
 
     @Override

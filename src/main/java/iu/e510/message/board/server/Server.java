@@ -1,16 +1,15 @@
 package iu.e510.message.board.server;
 
 import iu.e510.message.board.cluster.ClusterManager;
-import iu.e510.message.board.cluster.data.SuperNodeDataManager;
-import iu.e510.message.board.cluster.data.DataManagerImpl;
+import iu.e510.message.board.cluster.data.DataAdapter;
+import iu.e510.message.board.cluster.data.MapBasedDataAdapter;
+import iu.e510.message.board.cluster.data.DistributedDataManager;
 import iu.e510.message.board.tom.MessageService;
 import iu.e510.message.board.tom.MessageServiceImpl;
 import iu.e510.message.board.tom.common.Message;
 import iu.e510.message.board.util.Config;
 
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class Server {
@@ -20,12 +19,16 @@ public class Server {
 
     private ClusterManager clusterManager;
 
-    private SuperNodeDataManager superNodeDataManager;
+    /* This will be used to access the database level */
+    private DataAdapter dataAdapter;
 
+    /* this will be used to access data between the supernodes*/
+    private DistributedDataManager dataManager;
+
+    /* message service to handle comms within the supernodes */
     private MessageService messageService;
 
-    private BlockingQueue<String> superNodeMsgQueue;
-    private Map<String, Message> superNodeMsgs;
+    private BlockingQueue<Message> internalMsgQueue;
 
 
     public Server(String nodeID) throws Exception {
@@ -33,21 +36,25 @@ public class Server {
         this.id = nodeID;
         this.config = new Config();
 
-        this.superNodeMsgQueue = new LinkedBlockingQueue<>();
-        this.superNodeMsgs = new ConcurrentHashMap<>();
+        this.internalMsgQueue = new LinkedBlockingQueue<>();
 
-        this.messageService = new MessageServiceImpl("tcp://" + id, id, superNodeMsgQueue, superNodeMsgs);
+        this.dataAdapter = new MapBasedDataAdapter();
+
+        this.messageService = new MessageServiceImpl("tcp://" + id, id,
+                dataAdapter, internalMsgQueue);
+
         this.clusterManager = new ClusterManager(id, messageService);
-        this.superNodeDataManager = new DataManagerImpl(id, messageService, superNodeMsgQueue, superNodeMsgs);
 
+        this.dataManager = new DistributedDataManager(id, messageService,
+                dataAdapter, internalMsgQueue, clusterManager);
 
     }
 
     public void run() throws Exception {
 
-        superNodeDataManager.addData("hapoi", "hi");
+        dataManager.addData("OH", "ohio".getBytes());
 
-        superNodeDataManager.addData("IN", "hi");
+        dataManager.addData("IN", "indiana".getBytes());
         System.out.println();
         System.out.println();
         int i = 0;
