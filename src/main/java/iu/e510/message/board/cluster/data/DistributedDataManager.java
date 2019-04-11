@@ -14,7 +14,9 @@ import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -154,6 +156,18 @@ public class DistributedDataManager implements DataManager {
     @Override
     public boolean getConsistency() {
         return this.consistency.get();
+    }
+
+    @Override
+    public Map<String, Set<String>> getTransferTopics(String newNodeID) {
+        HashSet<String> myTopics = getAllTopics();
+        Map<String, Set<String>> transferTopics = clusterManager.getTransferTopics(myNodeID, newNodeID, myTopics);
+        // get topics to be deleted (myTopics - myNewTopics)
+        myTopics.removeAll(transferTopics.get("oldNode"));
+        Map<String, Set<String>> resultMap = new HashMap<>();
+        resultMap.put("delete", myTopics);
+        resultMap.put("transfer", transferTopics.get("newNode"));
+        return resultMap;
     }
 
 

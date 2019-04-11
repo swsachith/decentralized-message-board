@@ -278,4 +278,32 @@ public class ClusterManager implements LeaderLatchListener {
                 nodePath.substring(config.getConfig(Constants.DATA_LOCATION).length() + 1));
         return topics;
     }
+
+    /**
+     * Returns the topics the old node and the new node should have.
+     * This is used when transferring the data from one node to the other.
+     * @param oldNode
+     * @param newNode
+     * @param topicList
+     * @return
+     */
+    public Map<String, Set<String>> getTransferTopics(String oldNode, String newNode, Set<String> topicList) {
+        Set<String> oldNodeTopics = new HashSet<>();
+        Set<String> newNodeTopics = new HashSet<>();
+        for (String topic : topicList) {
+            Set<String> hashingNodes = getHashingNodes(topic);
+            for (String node : hashingNodes) {
+                if (node.equals(oldNode)) {
+                    oldNodeTopics.add(topic);
+                }
+                if (node.equals(newNode)) {
+                    newNodeTopics.add(topic);
+                }
+            }
+        }
+        Map<String, Set<String>> resultMap = new HashMap<>();
+        resultMap.put("newNode", newNodeTopics);
+        resultMap.put("oldNode", oldNodeTopics);
+        return resultMap;
+    }
 }
