@@ -260,7 +260,7 @@ public class ClusterManager implements LeaderLatchListener {
         logger.info("Node added. Hence redistributing data");
         String hashingNode = getPreviousNode(eventNodeID);
         logger.info(eventNodeID + " Would talk to " + hashingNode + " to get the required topics");
-        messageService.send_unordered(new Payload<>("Talk to: " + hashingNode),
+        messageService.send_unordered(new Payload<>(hashingNode),
                 messageService.getUrl(eventNodeID), MessageType.TRANSFER);
         logger.info("Ring: "+ hashRing.getRing().toString());
     }

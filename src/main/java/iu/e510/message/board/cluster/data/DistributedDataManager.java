@@ -14,6 +14,7 @@ import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -60,12 +61,6 @@ public class DistributedDataManager implements DataManager {
 
         this.messsageExecutor = new MesssageExecutor();
 
-        initialize();
-
-        logger.info("Data Manager init done. My topics: " + myTopics.toString());
-    }
-
-    private void initialize() throws Exception {
         this.lock = new ReentrantReadWriteLock();
         this.readLock = this.lock.readLock();
         this.writeLock = this.lock.writeLock();
@@ -81,6 +76,8 @@ public class DistributedDataManager implements DataManager {
         }
 
         this.messsageExecutor.start();
+
+        logger.info("Data Manager init done. My topics: " + myTopics.toString());
     }
 
     @Override
@@ -115,7 +112,7 @@ public class DistributedDataManager implements DataManager {
         for (String node : nodes) {
             logger.debug("Talking to " + node);
 
-            Message response = messageService.send_unordered(new Payload<>(topic), node,
+            Message response = messageService.send_unordered(new Payload<>(topic), "tcp://" + node,
                     MessageType.DATA_REQUEST);
 
             if (response != null) return (byte[]) response.getPayload().getContent();
@@ -158,45 +155,52 @@ public class DistributedDataManager implements DataManager {
 
 
     class MesssageExecutor extends Thread {
+        private boolean running = true;
+
+        void stopExecutor() {
+            this.running = false;
+        }
+
         @Override
         public void run() {
-            try {
-                Message message = internalMessageQueue.take();
-                logger.info("Server is inconsistent");
-                setConsistency(false);
+            while (running) {
+                try {
+                    Message message = internalMessageQueue.take();
+                    logger.info("Server is inconsistent");
+                    setConsistency(false);
 
-                if (message.getMessageType() == MessageType.SYNC) {
-                    logger.info("Processing SYNC msg: " + message);
+                    if (message.getMessageType() == MessageType.SYNC) {
+                        logger.info("Processing SYNC msg: " + message);
 
-                    String topic = (String) message.getPayload().getContent();
+                        String topic = (String) message.getPayload().getContent();
 
-                    if (hasData(topic)) {
-                        logger.info("Nothing to do! Data available locally for: " + topic);
+                        if (hasData(topic)) {
+                            logger.info("Nothing to do! Data available locally for: " + topic);
+                        } else {
+                            logger.info("Requesting data from the cluster for: " + topic);
+                            byte[] data = getData(topic);
+                            logger.debug("Received data: " + Arrays.toString(data));
+                            dataAdapter.putDataDump(topic, data);
+                        }
+
+
+                    } else if (message.getMessageType() == MessageType.TRANSFER) {
+                        logger.info("Processing TRANSFER msg: " + message);
+                        // todo: implement this --> take the topics from the message and send the
+                        //  relevant data to the destination node
+
+
                     } else {
-                        logger.info("Requesting data from the cluster for: " + topic);
-                        byte[] data = getData(topic);
-                        dataAdapter.putDataDump(topic, data);
+                        throw new RuntimeException("Unknown message type: " + message);
                     }
 
+                    setConsistency(true);
+                    logger.info("Server consistent again!");
 
-                } else if (message.getMessageType() == MessageType.TRANSFER) {
-                    logger.info("Processing TRANSFER msg: " + message);
-                    // todo: implement this --> take the topics from the message and send the
-                    //  relevant data to the destination node
-
-
-                } else {
-                    throw new RuntimeException("Unknown message type: " + message);
+                } catch (InterruptedException e) {
+                    logger.error("Unable to access the queue: ", e);
                 }
-
-                setConsistency(true);
-                logger.info("Server consistent again!");
-
-            } catch (InterruptedException e) {
-                logger.error("Unable to access the queue: ", e);
             }
         }
     }
-
-
 }
