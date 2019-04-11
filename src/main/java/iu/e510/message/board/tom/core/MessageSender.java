@@ -29,8 +29,8 @@ public class MessageSender {
         socket.setReceiveTimeOut(sendTimeout);
         try {
             socket.connect(recipient);
-            byte[] response = socket.recv(0);
             socket.send(SerializationUtils.serialize(message));
+            byte[] response = socket.recv(0);
             return SerializationUtils.deserialize(response);
         } catch (Exception e) {
             logger.error("Error sending message: "
