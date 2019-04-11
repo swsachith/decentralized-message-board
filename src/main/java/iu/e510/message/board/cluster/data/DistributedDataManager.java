@@ -14,11 +14,7 @@ import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
@@ -186,18 +182,18 @@ public class DistributedDataManager implements DataManager {
                     if (message.getMessageType() == MessageType.SYNC) {
                         logger.info("Processing SYNC msg: " + message);
 
-                        String topic = (String) message.getPayload().getContent();
+                        Set<String> topics = (Set<String>) message.getPayload().getContent();
 
-                        if (hasData(topic)) {
-                            logger.info("Nothing to do! Data available locally for: " + topic);
-                        } else {
-                            logger.info("Requesting data from the cluster for: " + topic);
-                            byte[] data = getData(topic);
-                            logger.debug("Received data: " + Arrays.toString(data));
-                            dataAdapter.putDataDump(topic, data);
+                        for (String topic : topics) {
+                            if (hasData(topic)) {
+                                logger.info("Nothing to do! Data available locally for: " + topic);
+                            } else {
+                                logger.info("Requesting data from the cluster for: " + topic);
+                                byte[] data = getData(topic);
+                                logger.debug("Received data: " + Arrays.toString(data));
+                                dataAdapter.putDataDump(topic, data);
+                            }
                         }
-
-
                     } else if (message.getMessageType() == MessageType.TRANSFER) {
                         logger.info("Processing TRANSFER msg: " + message);
                         // todo: implement this --> take the topics from the message and send the
