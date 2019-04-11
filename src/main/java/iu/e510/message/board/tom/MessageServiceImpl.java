@@ -52,7 +52,7 @@ public class MessageServiceImpl implements MessageService {
         this.superNodeMsgQueue = superNodeMsgQueue;
 
         this.messageReceiver.start();
-        messageDeliveryService.start();
+        this.messageDeliveryService.start();
         logger.info("Started the messaging service with pid: " + nodeID);
     }
 
