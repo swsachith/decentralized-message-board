@@ -1,4 +1,4 @@
-package iu.e510.message.board.dbconnect.ds;
+package iu.e510.message.board.dbserver.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;

@@ -11,7 +11,17 @@
     <properties>
         <binary.location>${basedir}/bin</binary.location>
         <final.jar.location>${binary.location}/lib</final.jar.location>
+        <resteasy.version>3.1.4.Final</resteasy.version>
     </properties>
+
+    <!-- For handling REST api requests-->
+    <repositories>
+        <repository>
+            <id>JBoss repository</id>
+            <url>https://repository.jboss.org/nexus/content/groups/public-jboss/</url>
+        </repository>
+    </repositories>
+
 
     <build>
         <plugins>
@@ -167,5 +177,44 @@
             <artifactId>json</artifactId>
             <version>20090211</version>
         </dependency>
+
+        <!-- ZeroMQ dependency -->
+        <dependency>
+            <groupId>org.zeromq</groupId>
+            <artifactId>jzmq</artifactId>
+            <version>3.1.0</version>
+        </dependency>
+
+        <!-- RESTEasy dependency-->
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jaxrs</artifactId>
+            <version>${resteasy.version}</version>
+        </dependency>
+
+        <!--rest-easy client-->
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-client</artifactId>
+            <version>${resteasy.version}</version>
+        </dependency>
+
+        <!--unit test-->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.8.2</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jackson-provider</artifactId>
+            <version>2.2.1.GA</version>
+        </dependency>
+
     </dependencies>
+
+    <packaging>war</packaging>
+
 </project>

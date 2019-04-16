@@ -1,10 +1,10 @@
-package iu.e510.message.board.dbconnect.dbinterface;
+package iu.e510.message.board.dbserver.dbinterface;
 
-import iu.e510.message.board.dbconnect.ds.DMBPost;
+import iu.e510.message.board.dbserver.model.DMBPost;
 
 import java.util.ArrayList;
 
-public interface DMBDatabaseInterface {
+public interface DMBDatabase {
     byte[] getAllPostsDataByteArray();
     byte[] getAllPostsDataByTopicByteArray(String pTopic);
     void addAllPostsDataByteArray(byte [] postByteArray);

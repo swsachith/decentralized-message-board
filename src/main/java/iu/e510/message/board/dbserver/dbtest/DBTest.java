@@ -1,13 +1,9 @@
-package iu.e510.message.board.dbconnect.dbtest;
+package iu.e510.message.board.dbserver.dbtest;
 
 
-import iu.e510.message.board.dbconnect.db.DMBDatabase;
-import iu.e510.message.board.dbconnect.ds.DMBPost;
+import iu.e510.message.board.dbserver.db.DMBDatabaseImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Collections;
 
 public class DBTest {
     private static Logger logger = LoggerFactory.getLogger(DBTest.class);
@@ -21,7 +17,7 @@ public class DBTest {
         }
 
         /*create a database if not exists*/
-        DMBDatabase dmbDatabase = new DMBDatabase();
+        DMBDatabaseImpl dmbDatabase = new DMBDatabaseImpl();
         dmbDatabase.createNewDatabase();
         /*create the posts table if not exists*/
         dmbDatabase.createTables();
@@ -30,7 +26,7 @@ public class DBTest {
 //        ArrayList<DMBPost> postsArrayList;
 //
 //        postsArrayList = dmbDatabase.getAllPostsDataArrayList();
-//        System.out.println(Collections.singletonList(postsArrayList));
+//        logger.info(Collections.singletonList(postsArrayList));
 //
 //
 //        if (postsArrayList != null) {
@@ -50,23 +46,23 @@ public class DBTest {
 //            }
 //        }
 //        postsArrayList = dmbDatabase.getAllPostsDataArrayList();
-//        System.out.println("on removing all records");
-//        System.out.println(Collections.singletonList(postsArrayList));
+//        logger.info("on removing all records");
+//        logger.info(Collections.singletonList(postsArrayList));
 //
 //        dmbDatabase.addAllPostsDataByteArray(databytes);
 //
 //        postsArrayList = dmbDatabase.getAllPostsDataArrayList();
-//        System.out.println("after adding back all records");
-//        System.out.println(Collections.singletonList(postsArrayList));
+//        logger.info("after adding back all records");
+//        logger.info(Collections.singletonList(postsArrayList));
 
-        System.out.println("adding records with same topic");
+        logger.info("adding records with same topic");
         for (int i = 5; i < 150; i++){
             dmbDatabase.addPostData(i + " post", "/r/" + (i % 10), "ninaad", "this is the " +
                     i +" post");
         }
-        System.out.println("getting records with same topic");
-        System.out.println(dmbDatabase.getAllPostsDataByTopicArrayList("/r/" + 5).size());
-
+        logger.info("getting records with same topic");
+        logger.info("" + dmbDatabase.getAllPostsDataByTopicArrayList("/r/" + 5).size());
+        logger.info("" + dmbDatabase.getAllPostsDataArrayList().size());
 //        dmbDatabase.deleteTables();
     }
 
