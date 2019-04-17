@@ -20,6 +20,7 @@ public class ClientAPIImpl extends UnicastRemoteObject implements ClientAPI {
 
     @Override
     public boolean post(String clientID, String topic, String title, String content) {
+        logger.info("Received a post request from: " + clientID + "\tfor topic: " + topic + "\ttitle: " + title);
         return true;
     }
 

@@ -64,7 +64,7 @@ public class ClientServiceImpl implements ClientService {
         try {
             return clientAPI.post(clientID, topic, title, content);
         } catch (RemoteException e) {
-            //todo handle this
+            logger.error("Error occurred trying to access the Super Node!", e);
         }
         return true;
     }
