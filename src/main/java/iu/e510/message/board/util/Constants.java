@@ -31,4 +31,5 @@ public class Constants {
 
     // Client configs
     public static final String SUPER_NODE_LIST = "SUPER_NODE_LIST";
+    public static final String CLIENT_ID = "CLIENT_ID";
 }

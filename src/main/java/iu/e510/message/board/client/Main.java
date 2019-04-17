@@ -1,5 +1,8 @@
 package iu.e510.message.board.client;
 
+import iu.e510.message.board.util.Config;
+import iu.e510.message.board.util.Constants;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -9,12 +12,14 @@ public class Main {
     public static final String REPLY = "reply";
 
     public static void main(String[] args) {
-        String clientID = "sachith";
-        ClientService clientService = new ClientServiceImpl(clientID);
-        boolean post = clientService.post("bloomington", "weather", "it's nice outside");
-        System.out.println(post);
+        Config config = new Config();
+        String clientID = config.getConfig(Constants.CLIENT_ID);
+        // todo: remove this when building the final jar, this is for testing only
+        clientID = "sachith";
 
-        // message processing from the standard in
+        ClientService clientService = new ClientServiceImpl(clientID);
+
+        // input processing from the standard in
         Scanner scanner = new Scanner(System.in);
         while (scanner.hasNextLine()) {
             String[] tokens = scanner.nextLine().split(",");
