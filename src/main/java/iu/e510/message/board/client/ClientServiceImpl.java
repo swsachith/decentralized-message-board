@@ -35,36 +35,12 @@ public class ClientServiceImpl implements ClientService {
         }
     }
 
-    /**
-     * Reads the list of super nodes from the configs and return an ArrayList
-     * @return
-     */
-    private List<String> getSuperNodeList() {
-        String superNodes = this.config.getConfig(Constants.SUPER_NODE_LIST);
-        return Arrays.asList(superNodes.split(","));
-    }
-
-    private ClientAPI getWorkingClientAPI() {
-        ClientAPI clientAPI;
-        for (String superNode : superNodeList) {
-            logger.info("Trying to connect to: " + superNode);
-            try {
-                clientAPI = (ClientAPI) registry.lookup(superNode);
-                logger.info("Connected to Super Node: " + superNode);
-                return clientAPI;
-            } catch (Exception e) {
-                logger.info(superNode + " cannot be reached. Hence trying the next node");
-            }
-        }
-        throw new RuntimeException("Cannot connect to any of the supernodes. Please verify the list");
-    }
-
     @Override
     public boolean post(String topic, String title, String content) {
         try {
             return clientAPI.post(clientID, topic, title, content);
         } catch (RemoteException e) {
-            logger.error("Error occurred trying to access the Super Node!", e);
+           serverConnectionRefresh();
         }
         return true;
     }
@@ -102,5 +78,41 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public List<DMBPost> getPosts(String topic) {
         return null;
+    }
+
+    /**
+     * Returns a working Supernode RMI object from the provided Super node list.
+     * @return
+     */
+    private ClientAPI getWorkingClientAPI() {
+        ClientAPI clientAPI;
+        for (String superNode : superNodeList) {
+            logger.info("Trying to connect to: " + superNode);
+            try {
+                clientAPI = (ClientAPI) registry.lookup(superNode);
+                logger.info("Connected to Super Node: " + superNode);
+                return clientAPI;
+            } catch (Exception e) {
+                logger.info(superNode + " cannot be reached. Hence trying the next node");
+            }
+        }
+        throw new RuntimeException("Cannot connect to any of the supernodes. Please verify the list");
+    }
+
+    /**
+     * If a server is not reachable, then updates and points to a working server in the given list.
+     */
+    private void serverConnectionRefresh() {
+        logger.error("Error occurred trying to access the Super Node! Please retry the command");
+        getWorkingClientAPI();
+    }
+
+    /**
+     * Reads the list of super nodes from the configs and return an ArrayList
+     * @return
+     */
+    private List<String> getSuperNodeList() {
+        String superNodes = this.config.getConfig(Constants.SUPER_NODE_LIST);
+        return Arrays.asList(superNodes.split(","));
     }
 }
