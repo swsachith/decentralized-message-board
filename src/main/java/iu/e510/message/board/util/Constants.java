@@ -24,4 +24,11 @@ public class Constants {
     public static final String DATA_LOCATION = "DATA_LOCATION";
     public static final String LEADER_PATH = "LEADER_PATH";
     public static final String LEADER_ELECTION_DELAY = "LEADER_ELECTION_DELAY";
+
+    // RMI Registry configs
+    public static final String RMI_REGISTRY_HOST = "RMI_REGISTRY_HOST";
+    public static final String RMI_REGISTRY_PORT = "RMI_REGISTRY_PORT";
+
+    // Client configs
+    public static final String SUPER_NODE_LIST = "SUPER_NODE_LIST";
 }
