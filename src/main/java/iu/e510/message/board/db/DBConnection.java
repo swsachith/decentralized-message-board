@@ -6,6 +6,7 @@ import iu.e510.message.board.util.Constants;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class DBConnection {
     private static Connection dbConnection;
@@ -15,7 +16,6 @@ public class DBConnection {
 
     public static synchronized Connection getDbConnection(String nodeID) throws ClassNotFoundException, SQLException {
         if (dbConnection == null) {
-            //todo: delete the db at startup
             Config config = new Config();
             String DB_DRIVER = config.getConfig(Constants.DB_DRIVER);
             String DB_USER = config.getConfig(Constants.DB_USER);
@@ -24,7 +24,9 @@ public class DBConnection {
 
             Class.forName(DB_DRIVER);
             dbConnection = DriverManager.getConnection(DB_CONN_URL, DB_USER, DB_PASSWORD);
-
+            // clean the database at startup
+            Statement statement = dbConnection.createStatement();
+            statement.execute("DROP ALL OBJECTS;");
         }
         return dbConnection;
     }
