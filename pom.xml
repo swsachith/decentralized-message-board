@@ -236,6 +236,12 @@
             <version>1.0.6.Final</version>
         </dependency>
 
+        <!-- H2 DB-->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>1.4.199</version>
+        </dependency>
     </dependencies>
 
 </project>
