@@ -26,7 +26,7 @@ public class DBConnection {
             dbConnection = DriverManager.getConnection(DB_CONN_URL, DB_USER, DB_PASSWORD);
             // clean the database at startup
             Statement statement = dbConnection.createStatement();
-            statement.execute("DROP ALL OBJECTS;");
+            statement.execute(Constants.CLEAN_DB_COMMAND);
         }
         return dbConnection;
     }

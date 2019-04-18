@@ -38,4 +38,5 @@ public class Constants {
     public static final String DB_CONNECTION_PREFIX = "DB_CONNECTION_PREFIX";
     public static final String DB_USER = "DB_USER";
     public static final String DB_PASSWORD = "DB_PASSWORD";
+    public static final String CLEAN_DB_COMMAND = "DROP ALL OBJECTS;";
 }
