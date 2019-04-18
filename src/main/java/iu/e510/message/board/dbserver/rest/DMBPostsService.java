@@ -1,8 +1,8 @@
 package iu.e510.message.board.dbserver.rest;
 
-import iu.e510.message.board.dbserver.db.DMBDatabaseImpl;
-import iu.e510.message.board.dbserver.dbinterface.DMBDatabase;
-import iu.e510.message.board.dbserver.model.DMBPost;
+import iu.e510.message.board.db.DMBDatabaseImpl;
+import iu.e510.message.board.db.DMBDatabase;
+import iu.e510.message.board.db.model.DMBPost;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -17,7 +17,7 @@ public class DMBPostsService {
     private DMBDatabase database;
 
     public DMBPostsService(){
-        database = new DMBDatabaseImpl();
+        database = new DMBDatabaseImpl("temp");
     }
 
     @GET

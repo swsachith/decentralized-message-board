@@ -1,6 +1,6 @@
 package iu.e510.message.board.client;
 
-import iu.e510.message.board.dbserver.model.DMBPost;
+import iu.e510.message.board.db.model.DMBPost;
 import iu.e510.message.board.server.ClientAPI;
 import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;

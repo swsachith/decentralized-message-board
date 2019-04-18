@@ -1,6 +1,6 @@
 package iu.e510.message.board.client;
 
-import iu.e510.message.board.dbserver.model.DMBPost;
+import iu.e510.message.board.db.model.DMBPost;
 
 import java.util.List;
 

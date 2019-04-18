@@ -1,7 +1,7 @@
 package iu.e510.message.board.dbserver.dbtest;
 
 
-import iu.e510.message.board.dbserver.db.DMBDatabaseImpl;
+import iu.e510.message.board.db.DMBDatabaseImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,18 +9,9 @@ public class DBTest {
     private static Logger logger = LoggerFactory.getLogger(DBTest.class);
     public static void main(String[] args){
 
-        /*check if jdbc is integrated*/
-        try {
-            Class.forName("org.sqlite.JDBC");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
         /*create a database if not exists*/
-        DMBDatabaseImpl dmbDatabase = new DMBDatabaseImpl();
-        dmbDatabase.createNewDatabase();
-        /*create the posts table if not exists*/
-        dmbDatabase.createTables();
+        DMBDatabaseImpl dmbDatabase = new DMBDatabaseImpl("temp");
+
 //        dmbDatabase.addPostData("first post", "/r/iu", "ninaad", "this is the first post");
 //        dmbDatabase.addPostData("second post", "/r/iu", "ninaad", "this is the second post");
 //        ArrayList<DMBPost> postsArrayList;

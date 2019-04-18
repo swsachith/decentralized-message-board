@@ -1,4 +1,4 @@
-package iu.e510.message.board.dbserver;
+package iu.e510.message.board.db.model;
 
 public class DMBReply {
     int mReplyId;

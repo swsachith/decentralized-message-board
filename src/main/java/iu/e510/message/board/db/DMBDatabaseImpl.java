@@ -1,28 +1,21 @@
-package iu.e510.message.board.dbserver.db;
+package iu.e510.message.board.db;
 
 
-import iu.e510.message.board.dbserver.DMBReply;
-import iu.e510.message.board.dbserver.dbinterface.DMBDatabase;
-import iu.e510.message.board.dbserver.model.DMBPost;
+import iu.e510.message.board.db.model.DMBReply;
+import iu.e510.message.board.db.model.DMBPost;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.sql.DataSource;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class DMBDatabaseImpl implements DMBDatabase {
     private static Logger logger = LoggerFactory.getLogger(DMBDatabaseImpl.class);
-
-//    private static final String DMB_DATABASE_FILE = "jdbc:sqlite:decentralizedMessageBoard.db";
-//    private static final String DMB_DATABASE_FILE = "jdbc:sqlite:${catalina.home}/dbs/decentralizedMessageBoard.db";
 
     /*table for storing posts*/
     private static final String DMB_POSTS_TABLE = "dmb_posts";
@@ -60,36 +53,15 @@ public class DMBDatabaseImpl implements DMBDatabase {
     private static final String DMB_FEEDBACK_UPVOTES_COLUMN = "reply_upvotes";
     private static final String DMB_FEEDBACK_DOWNVOTES_COLUMN = "reply_downvotes";
 
-
+    private Connection connection;
 
     /**
      * constructor for the database class, create database and tables
      */
-    public DMBDatabaseImpl() {
-        try {
-            Class.forName("org.sqlite.JDBC");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        createNewDatabase();
+    public DMBDatabaseImpl(String nodeID) {
+        DBService dbService = new DBService(nodeID);
+        connection = dbService.getConnection();
         createTables();
-    }
-
-    /**
-     * create a new database if not exists
-     */
-    public void createNewDatabase() {
-
-        try (Connection conn = getConnection()) {
-            if (conn != null) {
-                DatabaseMetaData meta = conn.getMetaData();
-                logger.info("The driver name is " + meta.getDriverName());
-                logger.info("A new database has been created.");
-            }
-
-        } catch (SQLException e) {
-            logger.info(e.getMessage());
-        }
     }
 
 
@@ -100,22 +72,16 @@ public class DMBDatabaseImpl implements DMBDatabase {
 
         String createPostsTableQuery = "CREATE TABLE IF NOT EXISTS " +
                 DMB_POSTS_TABLE + " (" +
-                DMB_POST_ID_COLUMN + " integer not null constraint posts_pk primary key," +
+                DMB_POST_ID_COLUMN + " integer not null primary key," +
 //                DMB_POST_TOPIC_ID_COLUMN + " integer not null, " +
                 DMB_POST_TOPIC_COLUMN + " text not null ," +
                 DMB_POST_TITLE_COLUMN + " text not null ," +
                 DMB_POST_OWNER_COLUMN + " text not null ," +
                 DMB_POST_DESCRIPTION_COLUMN + " text not null ," +
-                DMB_POST_CREATED_COLUMN + " real not null," +
+                DMB_POST_CREATED_COLUMN + " TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
                 DMB_POST_UPVOTES_COLUMN + " integer default 0," +
                 DMB_POST_DOWNVOTES_COLUMN + " integer default 0" +
-                ");" +
-                "create unique index post_id_uidx" +
-                " on " +
-                DMB_POSTS_TABLE + " (" + DMB_POST_ID_COLUMN + ");" +
-                "create index post_topic_id_idx" +
-                " on " +
-                DMB_POSTS_TABLE + " (" + DMB_POST_TOPIC_COLUMN + ");";
+                ");";
 
         String createRepliesTableQuery = "CREATE TABLE IF NOT EXISTS " +
                 DMB_REPLIES_TABLE + " (" +
@@ -134,9 +100,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
                 DMB_REPLIES_TABLE + " (" + DMB_REPLY_ID_COLUMN + ");";
 
 
-        try (Connection conn = getConnection();
-
-        Statement stmt = conn.createStatement()){
+        try (Statement stmt = connection.createStatement()){
             // create a new table
             stmt.execute(createPostsTableQuery);
             logger.info("posts table created");
@@ -148,64 +112,18 @@ public class DMBDatabaseImpl implements DMBDatabase {
     }
 
     /**
-     * create an connection to the database
-     *
-     * @return Connection object
-     */
-    private Connection getConnection() {
-        Context ctx = null;
-        DataSource ds = null;
-        try {
-            ctx = new InitialContext();
-            // looks in the context.xml file and gets the properties based on key
-            ds = (DataSource)ctx.lookup("java:comp/env/jdbc/decentralizedMessageBoard");
-        } catch (NamingException e) {
-            e.printStackTrace();
-        }
-
-
-        try {
-            Class.forName("org.sqlite.JDBC");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        Connection connection = null;
-        try {
-//            connection = DriverManager.getConnection(DMB_DATABASE_FILE);
-            //will use the url present in the context.xml file to generate connection
-            connection = ds.getConnection();
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        logger.info("Connection obj:" + connection);
-        return connection;
-    }
-
-    /**
      * get all posts as an array list from the database
      */
     @Override
     public ArrayList<DMBPost> getAllPostsDataArrayList() {
-        Connection connection = null;
         try {
-
-            connection = getConnection();
-
             String selectAllPostsQuery = "SELECT * FROM " + DMB_POSTS_TABLE;
 
             Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(selectAllPostsQuery);
             ArrayList<DMBPost> dmbPostsArrayList = new ArrayList<>();
             while (resultSet.next()) {
-                DMBPost postObject = new DMBPost();
-                postObject.setPostId(resultSet.getInt(DMB_POST_ID_COLUMN));
-                postObject.setPostOwnerId(resultSet.getString(DMB_POST_OWNER_COLUMN));
-                postObject.setPostTitle(resultSet.getString(DMB_POST_TITLE_COLUMN));
-                postObject.setPostDescription(resultSet.getString(DMB_POST_DESCRIPTION_COLUMN));
-                postObject.setPostTimeStamp(resultSet.getTimestamp(DMB_POST_CREATED_COLUMN).getTime());
-                postObject.setPostUpvotes(resultSet.getInt(DMB_POST_UPVOTES_COLUMN));
-                postObject.setPostDownvotes(resultSet.getInt(DMB_POST_DOWNVOTES_COLUMN));
+                DMBPost postObject = getDmbPostFromRS(resultSet);
 
                 dmbPostsArrayList.add(postObject);
             }
@@ -216,15 +134,25 @@ public class DMBDatabaseImpl implements DMBDatabase {
         return null;
     }
 
+    private DMBPost getDmbPostFromRS(ResultSet resultSet) throws SQLException {
+        DMBPost postObject = new DMBPost();
+        postObject.setPostId(resultSet.getInt(DMB_POST_ID_COLUMN));
+        postObject.setPostOwnerId(resultSet.getString(DMB_POST_OWNER_COLUMN));
+        postObject.setPostTitle(resultSet.getString(DMB_POST_TITLE_COLUMN));
+        postObject.setPostDescription(resultSet.getString(DMB_POST_DESCRIPTION_COLUMN));
+        postObject.setPostTimeStamp(resultSet.getTimestamp(DMB_POST_CREATED_COLUMN).getTime());
+        postObject.setPostUpvotes(resultSet.getInt(DMB_POST_UPVOTES_COLUMN));
+        postObject.setPostDownvotes(resultSet.getInt(DMB_POST_DOWNVOTES_COLUMN));
+        postObject.setPostTopic(resultSet.getString(DMB_POST_TOPIC_COLUMN));
+        return postObject;
+    }
+
     /**
      * get all posts as an array list from the database
      */
     @Override
     public ArrayList<DMBPost> getAllPostsDataByTopicArrayList(String pTopic) {
-        Connection connection = null;
         try {
-
-            connection = getConnection();
 
             String selectPostsByTopicQuery = "SELECT * FROM " + DMB_POSTS_TABLE +
                     " WHERE " + DMB_POST_TOPIC_COLUMN + " = ?";
@@ -234,15 +162,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
             ResultSet resultSet = statement.executeQuery();
             ArrayList<DMBPost> dmbPostsArrayList = new ArrayList<>();
             while (resultSet.next()) {
-                DMBPost postObject = new DMBPost();
-                postObject.setPostId(resultSet.getInt(DMB_POST_ID_COLUMN));
-                postObject.setPostOwnerId(resultSet.getString(DMB_POST_OWNER_COLUMN));
-                postObject.setPostTitle(resultSet.getString(DMB_POST_TITLE_COLUMN));
-                postObject.setPostDescription(resultSet.getString(DMB_POST_DESCRIPTION_COLUMN));
-                postObject.setPostTimeStamp(resultSet.getTimestamp(DMB_POST_CREATED_COLUMN).getTime());
-                postObject.setPostUpvotes(resultSet.getInt(DMB_POST_UPVOTES_COLUMN));
-                postObject.setPostDownvotes(resultSet.getInt(DMB_POST_DOWNVOTES_COLUMN));
-
+                DMBPost postObject = getDmbPostFromRS(resultSet);
                 dmbPostsArrayList.add(postObject);
             }
 
@@ -258,11 +178,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
      */
     @Override
     public byte[] getAllPostsDataByteArray() {
-        Connection connection = null;
         try {
-
-            connection = getConnection();
-
             String selectAllPostsQuery = "SELECT * FROM " + DMB_POSTS_TABLE;
 
             Statement statement = connection.createStatement();
@@ -291,11 +207,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
 
     @Override
     public byte[] getAllPostsDataByTopicByteArray(String pTopic) {
-        Connection connection = null;
         try {
-
-            connection = getConnection();
-
             String selectPostsByTopicQuery = "SELECT * FROM " + DMB_POSTS_TABLE +
                     " WHERE " + DMB_POST_TOPIC_COLUMN + " = ?";
 
@@ -328,10 +240,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
      */
     @Override
     public void addAllPostsDataByteArray(byte[] postByteArray) {
-        Connection connection = null;
         try {
-
-            connection = getConnection();
             String recordsJsonString = new String(postByteArray, StandardCharsets.UTF_8);
             JSONArray jsonPostsArray = new JSONArray(recordsJsonString);
             String sql = "INSERT INTO " + DMB_POSTS_TABLE + " (" +
@@ -372,23 +281,23 @@ public class DMBDatabaseImpl implements DMBDatabase {
      */
     @Override
     public void addPostData(String pTitle, String pTopic, String pOwner, String pDescription) {
-        Connection connection = null;
+        int randomID = ThreadLocalRandom.current().nextInt(10000, 1000000);
         try {
-            connection = getConnection();
-
             String sql = "INSERT INTO " + DMB_POSTS_TABLE + " (" +
+                    DMB_POST_ID_COLUMN + ", " +
                     DMB_POST_TITLE_COLUMN + ", " +
                     DMB_POST_TOPIC_COLUMN + ", " +
                     DMB_POST_OWNER_COLUMN + ", " +
                     DMB_POST_DESCRIPTION_COLUMN + ", " +
-                    DMB_POST_CREATED_COLUMN + ") VALUES(?, ?, ?, ?, ?)";
+                    DMB_POST_CREATED_COLUMN + ") VALUES(?, ?, ?, ?, ?, ?)";
 
             PreparedStatement pstmt = connection.prepareStatement(sql);
-            pstmt.setString(1, pTitle);
-            pstmt.setString(2, pTopic);
-            pstmt.setString(3, pOwner);
-            pstmt.setString(4, pDescription);
-            pstmt.setTimestamp(5, new Timestamp(System.currentTimeMillis()));
+            pstmt.setInt(1, randomID);
+            pstmt.setString(2, pTitle);
+            pstmt.setString(3, pTopic);
+            pstmt.setString(4, pOwner);
+            pstmt.setString(5, pDescription);
+            pstmt.setTimestamp(6, new Timestamp(System.currentTimeMillis()));
             pstmt.executeUpdate();
             logger.info("post data added");
         } catch (SQLException e) {
@@ -403,8 +312,6 @@ public class DMBDatabaseImpl implements DMBDatabase {
      */
     @Override
     public void removePostData(int pId, String pOwner) {
-        Connection connection = null;
-
 
         String postsSql = "DELETE FROM " + DMB_POSTS_TABLE +
                 " WHERE " + DMB_POST_ID_COLUMN + " = ?" +
@@ -414,8 +321,6 @@ public class DMBDatabaseImpl implements DMBDatabase {
                 " WHERE " + DMB_REPLY_POST_FK_COLUMN + " = ?";
 
         try {
-
-            connection = getConnection();
             PreparedStatement postsStmt = connection.prepareStatement(postsSql);
 
             // set the corresponding param
@@ -449,8 +354,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
         String deleteRepliesTableQuery = "DROP TABLE IF EXISTS " +
                 DMB_REPLIES_TABLE + ";";
 
-        try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement()) {
+        try (Statement stmt = connection.createStatement()) {
             // create a new table
             stmt.execute(deletePostsTableQuery);
             logger.info("posts table deleted");
@@ -463,13 +367,11 @@ public class DMBDatabaseImpl implements DMBDatabase {
 
     @Override
     public void upVotePost(int pId, String pOwner) {
-        Connection connection = null;
         String postsSql = "UPDATE " + DMB_POSTS_TABLE +
                 " SET " + DMB_POST_UPVOTES_COLUMN + " = " + DMB_POST_UPVOTES_COLUMN + " + 1 " +
                 " WHERE " + DMB_POST_ID_COLUMN + " = ?";
         try {
 
-            connection = getConnection();
             PreparedStatement postsStmt = connection.prepareStatement(postsSql);
 
             // set the corresponding param
@@ -485,13 +387,11 @@ public class DMBDatabaseImpl implements DMBDatabase {
 
     @Override
     public void downVotePost(int pId, String pOwner) {
-        Connection connection = null;
         String postsSql = "UPDATE " + DMB_POSTS_TABLE +
                 " SET " + DMB_POST_DOWNVOTES_COLUMN + " = " + DMB_POST_DOWNVOTES_COLUMN + " + 1 " +
                 " WHERE " + DMB_POST_ID_COLUMN + " = ?";
         try {
 
-            connection = getConnection();
             PreparedStatement postsStmt = connection.prepareStatement(postsSql);
 
             // set the corresponding param
@@ -507,9 +407,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
 
     @Override
     public void addReplyData(int pId, String rOwner, String rDescription) {
-        Connection connection = null;
         try {
-            connection = getConnection();
 
             String sql = "INSERT INTO " + DMB_REPLIES_TABLE + " (" +
                     DMB_REPLY_POST_FK_COLUMN + ", " +
@@ -531,11 +429,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
 
     @Override
     public ArrayList<DMBReply> getAllRepliesToPost(int pId) {
-        Connection connection = null;
         try {
-
-            connection = getConnection();
-
             String selectPostsByTopicQuery = "SELECT * FROM " + DMB_REPLIES_TABLE +
                     " WHERE " + DMB_REPLY_POST_FK_COLUMN + " = ?";
 
@@ -565,13 +459,10 @@ public class DMBDatabaseImpl implements DMBDatabase {
 
     @Override
     public void upVoteReply(int rId, String rOwner) {
-        Connection connection = null;
         String postsSql = "UPDATE " + DMB_REPLIES_TABLE +
                 " SET " + DMB_REPLY_UPVOTES_COLUMN + " = " + DMB_REPLY_UPVOTES_COLUMN + " + 1 " +
                 " WHERE " + DMB_REPLY_ID_COLUMN + " = ?";
         try {
-
-            connection = getConnection();
             PreparedStatement postsStmt = connection.prepareStatement(postsSql);
 
             // set the corresponding param
@@ -587,13 +478,10 @@ public class DMBDatabaseImpl implements DMBDatabase {
 
     @Override
     public void downVoteReply(int rId, String rOwner) {
-        Connection connection = null;
         String postsSql = "UPDATE " + DMB_REPLIES_TABLE +
                 " SET " + DMB_REPLY_DOWNVOTES_COLUMN + " = " + DMB_REPLY_DOWNVOTES_COLUMN + " + 1 " +
                 " WHERE " + DMB_REPLY_ID_COLUMN + " = ?";
         try {
-
-            connection = getConnection();
             PreparedStatement postsStmt = connection.prepareStatement(postsSql);
 
             // set the corresponding param
