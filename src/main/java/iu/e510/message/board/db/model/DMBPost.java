@@ -95,11 +95,13 @@ public class DMBPost implements Serializable {
         this.mPostDownvotes = mPostDownvotes;
     }
 
+
     @Override
     public String toString() {
         return "DMBPost{" +
                 "mPostId=" + mPostId +
                 ", mPostOwnerId='" + mPostOwnerId + '\'' +
+                ", mPostTopic='" + mPostTopic + '\'' +
                 ", mPostTitle='" + mPostTitle + '\'' +
                 ", mPostDescription='" + mPostDescription + '\'' +
                 ", mPostReplies=" + mPostReplies +

@@ -65,7 +65,6 @@ public class TestDBInterface {
     public void testAddUpVoteToReply(){
         ArrayList<DMBPost> posts = db.getAllPostsDataArrayList();
         ArrayList<DMBReply> repliesToPostArrayList = db.getAllRepliesToPostArrayList(posts.get(0).getPostId());
-
         Assert.assertEquals(repliesToPostArrayList.get(0).getReplyUpVotes(), 0);
         db.upVoteReply(repliesToPostArrayList.get(0).getReplyId(), "upvotereplier1");
         ArrayList<DMBReply> newrepliesToPostArrayList = db.getAllRepliesToPostArrayList(posts.get(0).getPostId());
@@ -85,12 +84,13 @@ public class TestDBInterface {
 
     @Test (dependsOnMethods = { "testAddDownVoteToReply"})
     public void testRemovePost(){
-        ArrayList<DMBPost> posts = db.getAllPostsDataArrayList();
-        db.removePostData(posts.get(0).getPostId(), "downvoteowner1");
-        ArrayList<DMBPost> newposts = db.getAllPostsDataArrayList();
-        Assert.assertEquals(newposts.size(), 2);
-        db.removePostData(posts.get(0).getPostId(), "postowner1");
-        Assert.assertEquals(newposts.size(), 1);
+        ArrayList<DMBPost> posts1 = db.getAllPostsDataArrayList();
+        db.removePostData(posts1.get(0).getPostId(), "downvoteowner1");
+        ArrayList<DMBPost> posts2 = db.getAllPostsDataArrayList();
+        Assert.assertEquals(posts2.size(), 2);
+        db.removePostData(posts1.get(0).getPostId(), "postowner1");
+        ArrayList<DMBPost> posts3 = db.getAllPostsDataArrayList();
+        Assert.assertEquals(posts3.size(), 1);
     }
 
 }

@@ -273,12 +273,12 @@ public class DMBDatabaseImpl implements DMBDatabase {
                 " WHERE " + DMB_POST_ID_COLUMN + " = ?" +
                 " AND " + DMB_POST_OWNER_COLUMN + " = ?";
 
+        String repliesSql = "DELETE FROM " + DMB_REPLIES_TABLE +
+                " WHERE " + DMB_REPLY_POST_FK_COLUMN + " = ?";
+
         String postsSql = "DELETE FROM " + DMB_POSTS_TABLE +
                 " WHERE " + DMB_POST_ID_COLUMN + " = ?" +
                 " AND " + DMB_POST_OWNER_COLUMN + " = ?";
-
-        String repliesSql = "DELETE FROM " + DMB_REPLIES_TABLE +
-                " WHERE " + DMB_REPLY_POST_FK_COLUMN + " = ?";
 
         try {
 
@@ -295,13 +295,6 @@ public class DMBDatabaseImpl implements DMBDatabase {
             logger.info("rowcount = " + rowcount);
 
             if (rowcount > 0) {
-
-                PreparedStatement postsStmt = connection.prepareStatement(postsSql);
-                postsStmt.setInt(1, pId);
-                postsStmt.setString(2, pOwner);
-                postsStmt.executeUpdate();
-                logger.info("post deleted");
-
                 PreparedStatement repliesStmt = connection.prepareStatement(repliesSql);
 
                 // set the corresponding param
@@ -309,6 +302,12 @@ public class DMBDatabaseImpl implements DMBDatabase {
                 // execute the delete statement
                 repliesStmt.executeUpdate();
                 logger.info("replies related to post deleted");
+
+                PreparedStatement postsStmt = connection.prepareStatement(postsSql);
+                postsStmt.setInt(1, pId);
+                postsStmt.setString(2, pOwner);
+                postsStmt.executeUpdate();
+                logger.info("post deleted");
             } else {
                 logger.info("post does not exist");
             }
