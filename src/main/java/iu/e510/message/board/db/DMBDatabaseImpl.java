@@ -14,44 +14,11 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static iu.e510.message.board.db.DBConstants.*;
+
 public class DMBDatabaseImpl implements DMBDatabase {
     private static Logger logger = LoggerFactory.getLogger(DMBDatabaseImpl.class);
 
-    /*table for storing posts*/
-    private static final String DMB_POSTS_TABLE = "dmb_posts";
-
-    private static final String DMB_POST_ID_COLUMN = "post_id";
-    //    private static final String DMB_POST_TOPIC_ID_COLUMN = "post_topic_id";
-    private static final String DMB_POST_TOPIC_COLUMN = "post_topic";
-    private static final String DMB_POST_TITLE_COLUMN = "post_title";
-    private static final String DMB_POST_OWNER_COLUMN = "post_owner";
-    private static final String DMB_POST_DESCRIPTION_COLUMN = "post_description";
-    private static final String DMB_POST_CREATED_COLUMN = "post_created";
-    private static final String DMB_POST_UPVOTES_COLUMN = "post_upvotes";
-    private static final String DMB_POST_DOWNVOTES_COLUMN = "post_downvotes";
-
-    /*table for storing replies (single level replies)*/
-    public static final String DMB_REPLIES_TABLE = "dmb_replies";
-
-    private static final String DMB_REPLY_ID_COLUMN = "reply_id";
-    private static final String DMB_REPLY_POST_FK_COLUMN = "post_id_fk";
-    private static final String DMB_REPLY_OWNER_COLUMN = "reply_owner";
-    private static final String DMB_REPLY_DESCRIPTION_COLUMN = "reply_description";
-    private static final String DMB_REPLY_CREATED_COLUMN = "reply_created";
-    private static final String DMB_REPLY_UPVOTES_COLUMN = "reply_upvotes";
-    private static final String DMB_REPLY_DOWNVOTES_COLUMN = "reply_downvotes";
-
-
-    /*table for storing feedback*/
-    public static final String DMB_FEEDBACK_TABLE = "dmb_feedback";
-
-    private static final String DMB_FEEDBACK_FK_COLUMN = "reply_id_fk";
-    private static final String DMB_FEEDBACK_POST_FK_COLUMN = "post_id_fk";
-    private static final String DMB_FEEDBACK_OWNER_COLUMN = "reply_owner";
-    private static final String DMB_FEEDBACK_DESCRIPTION_COLUMN = "reply_description";
-    private static final String DMB_FEEDBACK_CREATED_COLUMN = "reply_created";
-    private static final String DMB_FEEDBACK_UPVOTES_COLUMN = "reply_upvotes";
-    private static final String DMB_FEEDBACK_DOWNVOTES_COLUMN = "reply_downvotes";
 
     private Connection connection;
 
@@ -88,7 +55,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
                 DMB_REPLY_ID_COLUMN          + " integer not null constraint posts_pk primary key," +
                 DMB_REPLY_OWNER_COLUMN       + " text not null ," +
                 DMB_REPLY_DESCRIPTION_COLUMN + " text not null ," +
-                DMB_REPLY_CREATED_COLUMN     + " real not null," +
+                DMB_REPLY_CREATED_COLUMN     + " TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
                 DMB_REPLY_UPVOTES_COLUMN    + " integer default 0," +
                 DMB_REPLY_DOWNVOTES_COLUMN   + " integer default 0," +
                 DMB_REPLY_POST_FK_COLUMN     + " integer not null," +
@@ -124,7 +91,6 @@ public class DMBDatabaseImpl implements DMBDatabase {
             ArrayList<DMBPost> dmbPostsArrayList = new ArrayList<>();
             while (resultSet.next()) {
                 DMBPost postObject = getDmbPostFromRS(resultSet);
-
                 dmbPostsArrayList.add(postObject);
             }
             return dmbPostsArrayList;
@@ -132,19 +98,6 @@ public class DMBDatabaseImpl implements DMBDatabase {
             e.printStackTrace();
         }
         return null;
-    }
-
-    private DMBPost getDmbPostFromRS(ResultSet resultSet) throws SQLException {
-        DMBPost postObject = new DMBPost();
-        postObject.setPostId(resultSet.getInt(DMB_POST_ID_COLUMN));
-        postObject.setPostOwnerId(resultSet.getString(DMB_POST_OWNER_COLUMN));
-        postObject.setPostTitle(resultSet.getString(DMB_POST_TITLE_COLUMN));
-        postObject.setPostDescription(resultSet.getString(DMB_POST_DESCRIPTION_COLUMN));
-        postObject.setPostTimeStamp(resultSet.getTimestamp(DMB_POST_CREATED_COLUMN).getTime());
-        postObject.setPostUpvotes(resultSet.getInt(DMB_POST_UPVOTES_COLUMN));
-        postObject.setPostDownvotes(resultSet.getInt(DMB_POST_DOWNVOTES_COLUMN));
-        postObject.setPostTopic(resultSet.getString(DMB_POST_TOPIC_COLUMN));
-        return postObject;
     }
 
     /**
@@ -173,6 +126,21 @@ public class DMBDatabaseImpl implements DMBDatabase {
         return null;
     }
 
+    private DMBPost getDmbPostFromRS(ResultSet resultSet) throws SQLException {
+        DMBPost postObject = new DMBPost();
+        postObject.setPostId(resultSet.getInt(DMB_POST_ID_COLUMN));
+        postObject.setPostOwnerId(resultSet.getString(DMB_POST_OWNER_COLUMN));
+        postObject.setPostTitle(resultSet.getString(DMB_POST_TITLE_COLUMN));
+        postObject.setPostDescription(resultSet.getString(DMB_POST_DESCRIPTION_COLUMN));
+        postObject.setPostTimeStamp(resultSet.getTimestamp(DMB_POST_CREATED_COLUMN).getTime());
+        postObject.setPostUpvotes(resultSet.getInt(DMB_POST_UPVOTES_COLUMN));
+        postObject.setPostDownvotes(resultSet.getInt(DMB_POST_DOWNVOTES_COLUMN));
+        postObject.setPostTopic(resultSet.getString(DMB_POST_TOPIC_COLUMN));
+        postObject.setPostReplies(getAllRepliesToPostArrayList(resultSet.getInt(DMB_POST_ID_COLUMN)));
+        return postObject;
+    }
+
+
     /**
      * get all posts as a byte array from the database
      */
@@ -183,22 +151,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
 
             Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(selectAllPostsQuery);
-            JSONArray dmbPostsJsonArray = new JSONArray();
-            while (resultSet.next()) {
-
-                JSONObject postObject = new JSONObject();
-                postObject.put(DMB_POST_ID_COLUMN, resultSet.getInt(DMB_POST_ID_COLUMN));
-                postObject.put(DMB_POST_TOPIC_COLUMN, resultSet.getString(DMB_POST_TOPIC_COLUMN));
-                postObject.put(DMB_POST_OWNER_COLUMN, resultSet.getString(DMB_POST_OWNER_COLUMN));
-                postObject.put(DMB_POST_TITLE_COLUMN, resultSet.getString(DMB_POST_TITLE_COLUMN));
-                postObject.put(DMB_POST_DESCRIPTION_COLUMN, resultSet.getString(DMB_POST_DESCRIPTION_COLUMN));
-                postObject.put(DMB_POST_CREATED_COLUMN, resultSet.getTimestamp(DMB_POST_CREATED_COLUMN).getTime());
-                postObject.put(DMB_POST_UPVOTES_COLUMN, resultSet.getInt(DMB_POST_UPVOTES_COLUMN));
-                postObject.put(DMB_POST_DOWNVOTES_COLUMN, resultSet.getInt(DMB_POST_DOWNVOTES_COLUMN));
-
-                dmbPostsJsonArray.put(postObject);
-            }
-            return dmbPostsJsonArray.toString().getBytes();
+            return getDMBPostBytesFromRS(resultSet);
         } catch (JSONException | SQLException e) {
             e.printStackTrace();
         }
@@ -213,26 +166,30 @@ public class DMBDatabaseImpl implements DMBDatabase {
 
             PreparedStatement statement = connection.prepareStatement(selectPostsByTopicQuery);
             ResultSet resultSet = statement.executeQuery();
-            JSONArray dmbPostsJsonArray = new JSONArray();
-            while (resultSet.next()) {
-
-                JSONObject postObject = new JSONObject();
-                postObject.put(DMB_POST_ID_COLUMN, resultSet.getInt(DMB_POST_ID_COLUMN));
-                postObject.put(DMB_POST_TOPIC_COLUMN, resultSet.getString(DMB_POST_TOPIC_COLUMN));
-                postObject.put(DMB_POST_OWNER_COLUMN, resultSet.getString(DMB_POST_OWNER_COLUMN));
-                postObject.put(DMB_POST_TITLE_COLUMN, resultSet.getString(DMB_POST_TITLE_COLUMN));
-                postObject.put(DMB_POST_DESCRIPTION_COLUMN, resultSet.getString(DMB_POST_DESCRIPTION_COLUMN));
-                postObject.put(DMB_POST_CREATED_COLUMN, resultSet.getTimestamp(DMB_POST_CREATED_COLUMN).getTime());
-                postObject.put(DMB_POST_UPVOTES_COLUMN, resultSet.getInt(DMB_POST_UPVOTES_COLUMN));
-                postObject.put(DMB_POST_DOWNVOTES_COLUMN, resultSet.getInt(DMB_POST_DOWNVOTES_COLUMN));
-
-                dmbPostsJsonArray.put(postObject);
-            }
-            return dmbPostsJsonArray.toString().getBytes();
+            return getDMBPostBytesFromRS(resultSet);
         } catch (JSONException | SQLException e) {
             e.printStackTrace();
         }
         return null;
+    }
+
+    private byte[] getDMBPostBytesFromRS(ResultSet resultSet) throws SQLException, JSONException {
+        JSONArray dmbPostsJsonArray = new JSONArray();
+        while (resultSet.next()) {
+
+            JSONObject postObject = new JSONObject();
+            postObject.put(DMB_POST_ID_COLUMN, resultSet.getInt(DMB_POST_ID_COLUMN));
+            postObject.put(DMB_POST_TOPIC_COLUMN, resultSet.getString(DMB_POST_TOPIC_COLUMN));
+            postObject.put(DMB_POST_OWNER_COLUMN, resultSet.getString(DMB_POST_OWNER_COLUMN));
+            postObject.put(DMB_POST_TITLE_COLUMN, resultSet.getString(DMB_POST_TITLE_COLUMN));
+            postObject.put(DMB_POST_DESCRIPTION_COLUMN, resultSet.getString(DMB_POST_DESCRIPTION_COLUMN));
+            postObject.put(DMB_POST_CREATED_COLUMN, resultSet.getTimestamp(DMB_POST_CREATED_COLUMN).getTime());
+            postObject.put(DMB_POST_UPVOTES_COLUMN, resultSet.getInt(DMB_POST_UPVOTES_COLUMN));
+            postObject.put(DMB_POST_DOWNVOTES_COLUMN, resultSet.getInt(DMB_POST_DOWNVOTES_COLUMN));
+
+            dmbPostsJsonArray.put(postObject);
+        }
+        return dmbPostsJsonArray.toString().getBytes();
     }
 
     /**
@@ -312,6 +269,9 @@ public class DMBDatabaseImpl implements DMBDatabase {
      */
     @Override
     public void removePostData(int pId, String pOwner) {
+        String checkIfPostExistsSql = "SELECT count(*) AS rowcount FROM " + DMB_POSTS_TABLE +
+                " WHERE " + DMB_POST_ID_COLUMN + " = ?" +
+                " AND " + DMB_POST_OWNER_COLUMN + " = ?";
 
         String postsSql = "DELETE FROM " + DMB_POSTS_TABLE +
                 " WHERE " + DMB_POST_ID_COLUMN + " = ?" +
@@ -321,23 +281,37 @@ public class DMBDatabaseImpl implements DMBDatabase {
                 " WHERE " + DMB_REPLY_POST_FK_COLUMN + " = ?";
 
         try {
-            PreparedStatement postsStmt = connection.prepareStatement(postsSql);
 
-            // set the corresponding param
-            postsStmt.setInt(1, pId);
-            postsStmt.setString(2, pOwner);
-            // execute the delete statement
-            postsStmt.executeUpdate();
-            logger.info("posts table deleted");
+            PreparedStatement postExistsStmt = connection.prepareStatement(checkIfPostExistsSql, ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
+            postExistsStmt.setInt(1, pId);
+            postExistsStmt.setString(2, pOwner);
 
-            PreparedStatement repliesStmt = connection.prepareStatement(repliesSql);
+            ResultSet postExistsSet = postExistsStmt.executeQuery();
+            postExistsSet.next();
+            int rowcount = postExistsSet.getInt("rowcount");
+            postExistsSet.close();
 
-            // set the corresponding param
-            repliesStmt.setInt(1, pId);
-            // execute the delete statement
-            repliesStmt.executeUpdate();
-            logger.info("replies table deleted");
+            logger.info("rowcount = " + rowcount);
 
+            if (rowcount > 0) {
+
+                PreparedStatement postsStmt = connection.prepareStatement(postsSql);
+                postsStmt.setInt(1, pId);
+                postsStmt.setString(2, pOwner);
+                postsStmt.executeUpdate();
+                logger.info("post deleted");
+
+                PreparedStatement repliesStmt = connection.prepareStatement(repliesSql);
+
+                // set the corresponding param
+                repliesStmt.setInt(1, pId);
+                // execute the delete statement
+                repliesStmt.executeUpdate();
+                logger.info("replies related to post deleted");
+            } else {
+                logger.info("post does not exist");
+            }
         } catch (SQLException e) {
             logger.info(e.getMessage());
         }
@@ -365,6 +339,11 @@ public class DMBDatabaseImpl implements DMBDatabase {
         }
     }
 
+    /**
+     * Up vote a post
+     * @param pId
+     * @param pOwner
+     */
     @Override
     public void upVotePost(int pId, String pOwner) {
         String postsSql = "UPDATE " + DMB_POSTS_TABLE +
@@ -385,6 +364,11 @@ public class DMBDatabaseImpl implements DMBDatabase {
         }
     }
 
+    /**
+     * Down vote a post
+     * @param pId
+     * @param pOwner
+     */
     @Override
     public void downVotePost(int pId, String pOwner) {
         String postsSql = "UPDATE " + DMB_POSTS_TABLE +
@@ -405,21 +389,30 @@ public class DMBDatabaseImpl implements DMBDatabase {
         }
     }
 
+    /**
+     *  Add a reply
+     * @param pId
+     * @param rOwner
+     * @param rDescription
+     */
     @Override
     public void addReplyData(int pId, String rOwner, String rDescription) {
+        int randomID = ThreadLocalRandom.current().nextInt(10000, 1000000);
         try {
 
             String sql = "INSERT INTO " + DMB_REPLIES_TABLE + " (" +
                     DMB_REPLY_POST_FK_COLUMN + ", " +
+                    DMB_REPLY_ID_COLUMN + ", " +
                     DMB_REPLY_OWNER_COLUMN + ", " +
                     DMB_REPLY_DESCRIPTION_COLUMN + ", " +
-                    DMB_REPLY_CREATED_COLUMN + ") VALUES( ?, ?, ?, ?)";
+                    DMB_REPLY_CREATED_COLUMN + ") VALUES( ?, ?, ?, ?, ?)";
 
             PreparedStatement pstmt = connection.prepareStatement(sql);
             pstmt.setInt(1, pId);
-            pstmt.setString(2, rOwner);
-            pstmt.setString(3, rDescription);
-            pstmt.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
+            pstmt.setInt(2, randomID);
+            pstmt.setString(3, rOwner);
+            pstmt.setString(4, rDescription);
+            pstmt.setTimestamp(5, new Timestamp(System.currentTimeMillis()));
             pstmt.executeUpdate();
             logger.info("reply data added");
         } catch (SQLException e) {
@@ -427,8 +420,13 @@ public class DMBDatabaseImpl implements DMBDatabase {
         }
     }
 
+    /**
+     * Get replies for a particular post as array list
+     * @param pId
+     * @return
+     */
     @Override
-    public ArrayList<DMBReply> getAllRepliesToPost(int pId) {
+    public ArrayList<DMBReply> getAllRepliesToPostArrayList(int pId) {
         try {
             String selectPostsByTopicQuery = "SELECT * FROM " + DMB_REPLIES_TABLE +
                     " WHERE " + DMB_REPLY_POST_FK_COLUMN + " = ?";
@@ -436,39 +434,96 @@ public class DMBDatabaseImpl implements DMBDatabase {
             PreparedStatement statement = connection.prepareStatement(selectPostsByTopicQuery);
             statement.setInt(1, pId);
             ResultSet resultSet = statement.executeQuery();
-            ArrayList<DMBReply> dmbPostsArrayList = new ArrayList<>();
-            while (resultSet.next()) {
-                DMBReply postObject = new DMBReply();
-                postObject.setReplyId(resultSet.getInt(DMB_REPLY_ID_COLUMN));
-                postObject.setReplyOwner(resultSet.getString(DMB_REPLY_OWNER_COLUMN));
-                postObject.setPostId(resultSet.getInt(DMB_REPLY_POST_FK_COLUMN));
-                postObject.setReplyDescription(resultSet.getString(DMB_POST_DESCRIPTION_COLUMN));
-                postObject.setReplyTimeStamp(resultSet.getTimestamp(DMB_POST_CREATED_COLUMN).getTime());
-                postObject.setReplyUpVotes(resultSet.getInt(DMB_POST_UPVOTES_COLUMN));
-                postObject.setReplyDownVotes(resultSet.getInt(DMB_POST_DOWNVOTES_COLUMN));
-
-                dmbPostsArrayList.add(postObject);
-            }
-
-            return dmbPostsArrayList;
+            return getDmbRepliesArrayListFromRS(resultSet);
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return null;
     }
 
+
+    /**
+     * Get all replies as array list
+     * @return
+     */
+    @Override
+    public ArrayList<DMBReply> getAllRepliesArrayList() {
+        try {
+            String selectPostsByTopicQuery = "SELECT * FROM " + DMB_REPLIES_TABLE;
+
+            PreparedStatement statement = connection.prepareStatement(selectPostsByTopicQuery);
+            ResultSet resultSet = statement.executeQuery();
+            return getDmbRepliesArrayListFromRS(resultSet);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private ArrayList<DMBReply> getDmbRepliesArrayListFromRS(ResultSet resultSet) throws SQLException {
+        ArrayList<DMBReply> dmbReplietsArrayList = new ArrayList<>();
+        while (resultSet.next()) {
+            DMBReply replyObject = new DMBReply();
+            replyObject.setReplyId(resultSet.getInt(DMB_REPLY_ID_COLUMN));
+            replyObject.setReplyOwner(resultSet.getString(DMB_REPLY_OWNER_COLUMN));
+            replyObject.setPostId(resultSet.getInt(DMB_REPLY_POST_FK_COLUMN));
+            replyObject.setReplyDescription(resultSet.getString(DMB_REPLY_DESCRIPTION_COLUMN));
+            replyObject.setReplyTimeStamp(resultSet.getTimestamp(DMB_REPLY_CREATED_COLUMN).getTime());
+            replyObject.setReplyUpVotes(resultSet.getInt(DMB_REPLY_UPVOTES_COLUMN));
+            replyObject.setReplyDownVotes(resultSet.getInt(DMB_REPLY_DOWNVOTES_COLUMN));
+
+            dmbReplietsArrayList.add(replyObject);
+        }
+        return dmbReplietsArrayList;
+    }
+
+
+    /**
+     * Get replies for a particular post as byte array
+     * @return
+     */
+    @Override
+    public byte[] getAllRepliesByteArray() {
+        try {
+            String selectPostsByTopicQuery = "SELECT * FROM " + DMB_REPLIES_TABLE;
+
+            PreparedStatement statement = connection.prepareStatement(selectPostsByTopicQuery);
+            ResultSet resultSet = statement.executeQuery();
+            JSONArray dmbRepliesJsonArray = new JSONArray();
+            while (resultSet.next()) {
+                JSONObject replyObject = new JSONObject();
+                replyObject.put(DMB_REPLY_ID_COLUMN, resultSet.getInt(DMB_REPLY_ID_COLUMN));
+                replyObject.put(DMB_REPLY_OWNER_COLUMN, resultSet.getString(DMB_REPLY_OWNER_COLUMN));
+                replyObject.put(DMB_REPLY_POST_FK_COLUMN, resultSet.getInt(DMB_REPLY_POST_FK_COLUMN));
+                replyObject.put(DMB_REPLY_DESCRIPTION_COLUMN, resultSet.getString(DMB_REPLY_DESCRIPTION_COLUMN));
+                replyObject.put(DMB_REPLY_CREATED_COLUMN, resultSet.getTimestamp(DMB_REPLY_CREATED_COLUMN).getTime());
+                replyObject.put(DMB_REPLY_UPVOTES_COLUMN, resultSet.getInt(DMB_REPLY_UPVOTES_COLUMN));
+                replyObject.put(DMB_REPLY_DOWNVOTES_COLUMN, resultSet.getInt(DMB_REPLY_DOWNVOTES_COLUMN));
+
+                dmbRepliesJsonArray.put(replyObject);
+            }
+            return dmbRepliesJsonArray.toString().getBytes();
+        } catch (JSONException | SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
+    /**
+     * Up vote a reply
+     * @param rId
+     * @param rOwner
+     */
     @Override
     public void upVoteReply(int rId, String rOwner) {
-        String postsSql = "UPDATE " + DMB_REPLIES_TABLE +
+        String repliesSql = "UPDATE " + DMB_REPLIES_TABLE +
                 " SET " + DMB_REPLY_UPVOTES_COLUMN + " = " + DMB_REPLY_UPVOTES_COLUMN + " + 1 " +
                 " WHERE " + DMB_REPLY_ID_COLUMN + " = ?";
         try {
-            PreparedStatement postsStmt = connection.prepareStatement(postsSql);
-
-            // set the corresponding param
-            postsStmt.setInt(1, rId);
-            // execute the delete statement
-            postsStmt.executeUpdate();
+            PreparedStatement replyStmt = connection.prepareStatement(repliesSql);
+            replyStmt.setInt(1, rId);
+            replyStmt.executeUpdate();
             logger.info("reply up voted");
 
         } catch (SQLException e) {
@@ -476,18 +531,20 @@ public class DMBDatabaseImpl implements DMBDatabase {
         }
     }
 
+    /**
+     *  Down vote a reply
+     * @param rId
+     * @param rOwner
+     */
     @Override
     public void downVoteReply(int rId, String rOwner) {
-        String postsSql = "UPDATE " + DMB_REPLIES_TABLE +
+        String repliesSql = "UPDATE " + DMB_REPLIES_TABLE +
                 " SET " + DMB_REPLY_DOWNVOTES_COLUMN + " = " + DMB_REPLY_DOWNVOTES_COLUMN + " + 1 " +
                 " WHERE " + DMB_REPLY_ID_COLUMN + " = ?";
         try {
-            PreparedStatement postsStmt = connection.prepareStatement(postsSql);
-
-            // set the corresponding param
-            postsStmt.setInt(1, rId);
-            // execute the delete statement
-            postsStmt.executeUpdate();
+            PreparedStatement replyStmt = connection.prepareStatement(repliesSql);
+            replyStmt.setInt(1, rId);
+            replyStmt.executeUpdate();
             logger.info("reply down voted");
 
         } catch (SQLException e) {

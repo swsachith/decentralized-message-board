@@ -20,7 +20,12 @@ public interface DMBDatabase {
 
 
     void addReplyData(int pId, String rOwner, String rDescription);
-    ArrayList<DMBReply> getAllRepliesToPost(int pId);
+    ArrayList<DMBReply> getAllRepliesToPostArrayList(int pId);
+
+    ArrayList<DMBReply> getAllRepliesArrayList();
+
+    byte [] getAllRepliesByteArray();
+
     void upVoteReply(int rId, String rOwner);
     void downVoteReply(int rId, String rOwner);
 }

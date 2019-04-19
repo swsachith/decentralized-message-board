@@ -1,6 +1,7 @@
 package iu.e510.message.board.db;
 
 import iu.e510.message.board.db.model.DMBPost;
+import iu.e510.message.board.db.model.DMBReply;
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
@@ -17,15 +18,79 @@ public class TestDBInterface {
 
     @Test
     public void testAddPost() {
-        db.addPostData("Hello Bloomington", "Bloomington", "tempowner", "hello world!");
+        db.addPostData("Hello Bloomington", "Bloomington", "postowner1", "hello world!");
         ArrayList<DMBPost> posts = db.getAllPostsDataArrayList();
         Assert.assertEquals(posts.get(0).getPostTopic(), "Bloomington");
     }
 
     @Test (dependsOnMethods = { "testAddPost" })
     public void testGetAllPosts() {
-        db.addPostData("Hello IU", "IU", "tempowner", "hello IU!");
+        db.addPostData("Hello IU", "IU", "postowner2", "hello IU!");
         ArrayList<DMBPost> posts = db.getAllPostsDataArrayList();
         Assert.assertEquals(posts.size(), 2);
     }
+
+    @Test (dependsOnMethods = { "testGetAllPosts" })
+    public void testAddReply() {
+        ArrayList<DMBPost> posts = db.getAllPostsDataArrayList();
+        db.addReplyData(posts.get(0).getPostId(), "replyowner1", "Welcome to Bloomington!");
+        db.addReplyData(posts.get(1).getPostId(), "replyowner2", "Welcome to IU!");
+
+        ArrayList<DMBReply> replies1 = db.getAllRepliesToPostArrayList(posts.get(0).getPostId());
+        ArrayList<DMBReply> replies2 = db.getAllRepliesToPostArrayList(posts.get(1).getPostId());
+
+        Assert.assertEquals(replies1.get(0).getReplyOwner(), "replyowner1");
+        Assert.assertEquals(replies2.get(0).getReplyOwner(), "replyowner2");
+    }
+
+    @Test (dependsOnMethods = { "testAddReply"})
+    public void testAddUpVoteToPost(){
+        ArrayList<DMBPost> posts = db.getAllPostsDataArrayList();
+        Assert.assertEquals(posts.get(0).getPostUpvotes(), 0);
+        db.upVotePost(posts.get(0).getPostId(), "upvoteowner1");
+        ArrayList<DMBPost> newposts = db.getAllPostsDataArrayList();
+        Assert.assertEquals(newposts.get(0).getPostUpvotes(), 1);
+    }
+
+    @Test (dependsOnMethods = { "testAddUpVoteToPost"})
+    public void testAddDownVoteToPost(){
+        ArrayList<DMBPost> posts = db.getAllPostsDataArrayList();
+        Assert.assertEquals(posts.get(0).getPostDownvotes(), 0);
+        db.downVotePost(posts.get(0).getPostId(), "downvoteowner1");
+        ArrayList<DMBPost> newposts = db.getAllPostsDataArrayList();
+        Assert.assertEquals(newposts.get(0).getPostDownvotes(), 1);
+    }
+
+    @Test (dependsOnMethods = { "testAddDownVoteToPost"})
+    public void testAddUpVoteToReply(){
+        ArrayList<DMBPost> posts = db.getAllPostsDataArrayList();
+        ArrayList<DMBReply> repliesToPostArrayList = db.getAllRepliesToPostArrayList(posts.get(0).getPostId());
+
+        Assert.assertEquals(repliesToPostArrayList.get(0).getReplyUpVotes(), 0);
+        db.upVoteReply(repliesToPostArrayList.get(0).getReplyId(), "upvotereplier1");
+        ArrayList<DMBReply> newrepliesToPostArrayList = db.getAllRepliesToPostArrayList(posts.get(0).getPostId());
+        Assert.assertEquals(newrepliesToPostArrayList.get(0).getReplyUpVotes(), 1);
+    }
+
+    @Test (dependsOnMethods = { "testAddUpVoteToPost"})
+    public void testAddDownVoteToReply(){
+        ArrayList<DMBPost> posts = db.getAllPostsDataArrayList();
+        ArrayList<DMBReply> repliesToPostArrayList = db.getAllRepliesToPostArrayList(posts.get(0).getPostId());
+
+        Assert.assertEquals(repliesToPostArrayList.get(0).getReplyDownVotes(), 0);
+        db.downVoteReply(repliesToPostArrayList.get(0).getReplyId(), "downvotereplier1");
+        ArrayList<DMBReply> newrepliesToPostArrayList = db.getAllRepliesToPostArrayList(posts.get(0).getPostId());
+        Assert.assertEquals(newrepliesToPostArrayList.get(0).getReplyDownVotes(), 1);
+    }
+
+    @Test (dependsOnMethods = { "testAddDownVoteToReply"})
+    public void testRemovePost(){
+        ArrayList<DMBPost> posts = db.getAllPostsDataArrayList();
+        db.removePostData(posts.get(0).getPostId(), "downvoteowner1");
+        ArrayList<DMBPost> newposts = db.getAllPostsDataArrayList();
+        Assert.assertEquals(newposts.size(), 2);
+        db.removePostData(posts.get(0).getPostId(), "postowner1");
+        Assert.assertEquals(newposts.size(), 1);
+    }
+
 }
