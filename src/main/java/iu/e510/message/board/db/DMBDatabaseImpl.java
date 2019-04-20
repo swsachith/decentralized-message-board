@@ -224,7 +224,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
                 pstmt.setInt(7, jsonPostObject.getInt(DMB_POST_UPVOTES_COLUMN));
                 pstmt.setInt(8, jsonPostObject.getInt(DMB_POST_DOWNVOTES_COLUMN));
                 pstmt.executeUpdate();
-                logger.info("post data added");
+                logger.info("posts data added");
             }
 
         } catch (JSONException | SQLException e) {
@@ -492,8 +492,8 @@ public class DMBDatabaseImpl implements DMBDatabase {
             while (resultSet.next()) {
                 JSONObject replyObject = new JSONObject();
                 replyObject.put(DMB_REPLY_ID_COLUMN, resultSet.getInt(DMB_REPLY_ID_COLUMN));
-                replyObject.put(DMB_REPLY_OWNER_COLUMN, resultSet.getString(DMB_REPLY_OWNER_COLUMN));
                 replyObject.put(DMB_REPLY_POST_FK_COLUMN, resultSet.getInt(DMB_REPLY_POST_FK_COLUMN));
+                replyObject.put(DMB_REPLY_OWNER_COLUMN, resultSet.getString(DMB_REPLY_OWNER_COLUMN));
                 replyObject.put(DMB_REPLY_DESCRIPTION_COLUMN, resultSet.getString(DMB_REPLY_DESCRIPTION_COLUMN));
                 replyObject.put(DMB_REPLY_CREATED_COLUMN, resultSet.getTimestamp(DMB_REPLY_CREATED_COLUMN).getTime());
                 replyObject.put(DMB_REPLY_UPVOTES_COLUMN, resultSet.getInt(DMB_REPLY_UPVOTES_COLUMN));
@@ -506,6 +506,41 @@ public class DMBDatabaseImpl implements DMBDatabase {
             e.printStackTrace();
         }
         return null;
+    }
+
+    @Override
+    public void addAllRepliesDataByteArray(byte[] repliesByteArray) {
+        try {
+            String recordsJsonString = new String(repliesByteArray, StandardCharsets.UTF_8);
+            JSONArray jsonRepliesArray = new JSONArray(recordsJsonString);
+            String sql = "INSERT INTO " + DMB_REPLIES_TABLE + " (" +
+                    DMB_REPLY_ID_COLUMN + ", " +
+                    DMB_REPLY_POST_FK_COLUMN + ", " +
+                    DMB_REPLY_OWNER_COLUMN + ", " +
+                    DMB_REPLY_DESCRIPTION_COLUMN + ", " +
+                    DMB_REPLY_UPVOTES_COLUMN + ", " +
+                    DMB_REPLY_DOWNVOTES_COLUMN + ", " +
+                    DMB_REPLY_CREATED_COLUMN + ") VALUES(?, ?, ?, ?, ?, ?, ?)";
+
+            for (int i = 0; i < jsonRepliesArray.length(); i++) {
+
+                JSONObject jsonReplyObject = jsonRepliesArray.getJSONObject(i);
+
+                PreparedStatement pstmt = connection.prepareStatement(sql);
+                pstmt.setInt(1, jsonReplyObject.getInt(DMB_REPLY_ID_COLUMN));
+                pstmt.setInt(2, jsonReplyObject.getInt(DMB_REPLY_POST_FK_COLUMN));
+                pstmt.setString(3, jsonReplyObject.getString(DMB_REPLY_OWNER_COLUMN));
+                pstmt.setString(4, jsonReplyObject.getString(DMB_REPLY_DESCRIPTION_COLUMN));
+                pstmt.setInt(5, jsonReplyObject.getInt(DMB_POST_UPVOTES_COLUMN));
+                pstmt.setInt(6, jsonReplyObject.getInt(DMB_POST_DOWNVOTES_COLUMN));
+                pstmt.setTimestamp(7, new Timestamp(jsonReplyObject.getLong(DMB_REPLY_CREATED_COLUMN)));
+                pstmt.executeUpdate();
+                logger.info("replies data added");
+            }
+
+        } catch (JSONException | SQLException e) {
+            e.printStackTrace();
+        }
     }
 
 

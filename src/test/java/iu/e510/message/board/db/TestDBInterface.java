@@ -91,6 +91,9 @@ public class TestDBInterface {
         db.removePostData(posts1.get(0).getPostId(), "postowner1");
         ArrayList<DMBPost> posts3 = db.getAllPostsDataArrayList();
         Assert.assertEquals(posts3.size(), 1);
+        db.removePostData(posts1.get(0).getPostId(), "postowner1");
+        ArrayList<DMBPost> posts4 = db.getAllPostsDataArrayList();
+        Assert.assertEquals(posts4.size(), 1);
     }
 
 }
