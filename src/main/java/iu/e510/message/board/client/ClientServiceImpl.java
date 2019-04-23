@@ -46,32 +46,32 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
-    public void upvotePost(String topic, String postID) {
+    public void upvotePost(String topic, int postID) {
 
     }
 
     @Override
-    public void downvotePost(String topic, String postID) {
+    public void downvotePost(String topic, int postID) {
 
     }
 
     @Override
-    public void replyPost(String topic, String postID, String content) {
+    public void replyPost(String topic, int postID, String content) {
 
     }
 
     @Override
-    public void upvoteReply(String topic, String postID, String replyID) {
+    public void upvoteReply(String topic, int postID, int replyID) {
 
     }
 
     @Override
-    public void downvoteReply(String topic, String postID, String replyID) {
+    public void downvoteReply(String topic, int postID, int replyID) {
 
     }
 
     @Override
-    public DMBPost getPost(String topic, String postID) {
+    public DMBPost getPost(String topic, int postID) {
         return null;
     }
 

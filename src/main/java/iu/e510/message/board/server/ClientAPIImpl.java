@@ -25,32 +25,32 @@ public class ClientAPIImpl extends UnicastRemoteObject implements ClientAPI {
     }
 
     @Override
-    public void upvotePost(String clientID, String topic, String postID) {
+    public void upvotePost(String clientID, String topic, int postID) {
 
     }
 
     @Override
-    public void downvotePost(String clientID, String topic, String postID) {
+    public void downvotePost(String clientID, String topic, int postID) {
 
     }
 
     @Override
-    public void replyPost(String clientID, String topic, String postID, String content) {
+    public void replyPost(String clientID, String topic, int postID, String content) {
 
     }
 
     @Override
-    public void upvoteReply(String clientID, String topic, String postID, String replyID) {
+    public void upvoteReply(String clientID, String topic, int postID, int replyID) {
 
     }
 
     @Override
-    public void downvoteReply(String clientID, String topic, String postID, String replyID) {
+    public void downvoteReply(String clientID, String topic, int postID, int replyID) {
 
     }
 
     @Override
-    public DMBPost getPost(String clientID, String topic, String postID) {
+    public DMBPost getPost(String clientID, String topic, int postID) {
         return null;
     }
 

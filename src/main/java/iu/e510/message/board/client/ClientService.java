@@ -8,19 +8,19 @@ public interface ClientService {
     // Posting, upvoting and downvoting posts
     boolean post(String topic, String title, String content);
 
-    void upvotePost(String topic, String postID);
+    void upvotePost(String topic, int postID);
 
-    void downvotePost(String topic, String postID);
+    void downvotePost(String topic, int postID);
 
     // one-level-reply to posts, upvoting and downvoting replies
-    void replyPost(String topic, String postID, String content);
+    void replyPost(String topic, int postID, String content);
 
-    void upvoteReply(String topic, String postID, String replyID);
+    void upvoteReply(String topic, int postID, int replyID);
 
-    void downvoteReply(String topic, String postID, String replyID);
+    void downvoteReply(String topic, int postID, int replyID);
 
     // retrieval of data
-    DMBPost getPost(String topic, String postID);
+    DMBPost getPost(String topic, int postID);
 
     /**
      * A paginated version of the posts retrieval in a ranked manner.
