@@ -6,9 +6,10 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.util.Properties;
 
-public class Config {
+public class Config implements Serializable {
     private static Logger logger = LoggerFactory.getLogger(Config.class);
     private Properties configurations;
 

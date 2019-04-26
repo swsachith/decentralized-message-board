@@ -24,4 +24,19 @@ public class Constants {
     public static final String DATA_LOCATION = "DATA_LOCATION";
     public static final String LEADER_PATH = "LEADER_PATH";
     public static final String LEADER_ELECTION_DELAY = "LEADER_ELECTION_DELAY";
+
+    // RMI Registry configs
+    public static final String RMI_REGISTRY_HOST = "RMI_REGISTRY_HOST";
+    public static final String RMI_REGISTRY_PORT = "RMI_REGISTRY_PORT";
+
+    // Client configs
+    public static final String SUPER_NODE_LIST = "SUPER_NODE_LIST";
+    public static final String CLIENT_ID = "CLIENT_ID";
+
+    // Database configurations
+    public static final String DB_DRIVER = "DB_DRIVER";
+    public static final String DB_CONNECTION_PREFIX = "DB_CONNECTION_PREFIX";
+    public static final String DB_USER = "DB_USER";
+    public static final String DB_PASSWORD = "DB_PASSWORD";
+    public static final String CLEAN_DB_COMMAND = "DROP ALL OBJECTS;";
 }

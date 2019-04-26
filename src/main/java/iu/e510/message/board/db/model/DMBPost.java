@@ -1,17 +1,27 @@
-package iu.e510.message.board.serverDatabase.ds;
+package iu.e510.message.board.db.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 
-public class DMBPosts implements Serializable {
+public class DMBPost implements Serializable {
     private int mPostId;
     private String mPostOwnerId;
+    private String mPostTopic;
     private String mPostTitle;
     private String mPostDescription;
-    private ArrayList<String> mPostReplies;
+    private ArrayList<DMBReply> mPostReplies;
     private long mPostTimeStamp;
     private int mPostUpvotes;
     private int mPostDownvotes;
+
+    public DMBPost(){}
+
+    public DMBPost(String mPostOwnerId, String mPostTopic, String mPostTitle, String mPostDescription) {
+        this.mPostOwnerId = mPostOwnerId;
+        this.mPostTopic = mPostTopic;
+        this.mPostTitle = mPostTitle;
+        this.mPostDescription = mPostDescription;
+    }
 
     public String getPostOwnerId() {
         return mPostOwnerId;
@@ -37,6 +47,14 @@ public class DMBPosts implements Serializable {
         this.mPostTitle = mPostTitle;
     }
 
+    public String getPostTopic() {
+        return mPostTopic;
+    }
+
+    public void setPostTopic(String mPostCategory) {
+        this.mPostTopic = mPostCategory;
+    }
+
     public String getPostDescription() {
         return mPostDescription;
     }
@@ -45,11 +63,11 @@ public class DMBPosts implements Serializable {
         this.mPostDescription = mPostDescription;
     }
 
-    public ArrayList<String> getPostReplies() {
+    public ArrayList<DMBReply> getPostReplies() {
         return mPostReplies;
     }
 
-    public void setPostReplies(ArrayList<String> mPostReplies) {
+    public void setPostReplies(ArrayList<DMBReply> mPostReplies) {
         this.mPostReplies = mPostReplies;
     }
 
@@ -77,11 +95,13 @@ public class DMBPosts implements Serializable {
         this.mPostDownvotes = mPostDownvotes;
     }
 
+
     @Override
     public String toString() {
-        return "DMBPosts{" +
+        return "DMBPost{" +
                 "mPostId=" + mPostId +
                 ", mPostOwnerId='" + mPostOwnerId + '\'' +
+                ", mPostTopic='" + mPostTopic + '\'' +
                 ", mPostTitle='" + mPostTitle + '\'' +
                 ", mPostDescription='" + mPostDescription + '\'' +
                 ", mPostReplies=" + mPostReplies +
