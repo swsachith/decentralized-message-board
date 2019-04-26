@@ -13,7 +13,7 @@ public class TestDataManager extends BaseZKTest {
 
     @Test
     public void setData() throws Exception {
-        DistributedDataManager superNodeDataManager = new DistributedDataManager(ip, null, null,
+        DataManagerImpl superNodeDataManager = new DataManagerImpl(ip, null, null,
                 null, null);
         superNodeDataManager.addData("bloomington", "hi".getBytes());
         superNodeDataManager.addData("iu", "hi".getBytes());

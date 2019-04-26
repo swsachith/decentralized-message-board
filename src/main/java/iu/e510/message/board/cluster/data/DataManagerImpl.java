@@ -21,8 +21,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class DistributedDataManager implements DataManager {
-    private static Logger logger = LoggerFactory.getLogger(DistributedDataManager.class);
+public class DataManagerImpl implements DataManager {
+    private static Logger logger = LoggerFactory.getLogger(DataManagerImpl.class);
     private ReadWriteLock lock;
     private Lock readLock;
     private Lock writeLock;
@@ -42,10 +42,10 @@ public class DistributedDataManager implements DataManager {
 
     private ClusterManager clusterManager;
 
-    public DistributedDataManager(String nodeID, MessageService messageService,
-                                  DataAdapter dataAdapter,
-                                  BlockingQueue<Message> internalMessageQueue,
-                                  ClusterManager clusterManager) throws Exception {
+    public DataManagerImpl(String nodeID, MessageService messageService,
+                           DataAdapter dataAdapter,
+                           BlockingQueue<Message> internalMessageQueue,
+                           ClusterManager clusterManager) throws Exception {
         logger.info("Initializing the Data Manager!");
         this.config = new Config();
         this.myNodeID = nodeID;
