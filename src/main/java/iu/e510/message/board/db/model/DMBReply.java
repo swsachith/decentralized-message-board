@@ -1,13 +1,13 @@
 package iu.e510.message.board.db.model;
 
 public class DMBReply {
-    int mReplyId;
-    int mPostId;
-    String mReplyOwner;
-    String mReplyDescription;
-    int mReplyUpVotes;
-    int mReplyDownVotes;
-    long mReplyTimeStamp;
+    private int mReplyId;
+    private int mPostId;
+    private String mReplyOwner;
+    private String mReplyDescription;
+    private int mReplyUpVotes;
+    private int mReplyDownVotes;
+    private long mReplyTimeStamp;
 
     public int getReplyId() {
         return mReplyId;

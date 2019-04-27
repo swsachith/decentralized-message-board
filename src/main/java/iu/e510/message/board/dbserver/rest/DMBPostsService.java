@@ -24,7 +24,7 @@ public class DMBPostsService {
     @Path("/posts")
     @Produces(MediaType.APPLICATION_JSON)
     public ArrayList<DMBPost> getPosts(){
-        ArrayList<DMBPost> res = database.getAllPostsDataArrayList();
+        ArrayList<DMBPost> res = database.getPostsDataArrayList();
         System.out.println(res);
         System.out.println(res.size());
         return res;

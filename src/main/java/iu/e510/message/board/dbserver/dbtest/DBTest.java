@@ -16,7 +16,7 @@ public class DBTest {
 //        dmbDatabase.addPostData("second post", "/r/iu", "ninaad", "this is the second post");
 //        ArrayList<DMBPost> postsArrayList;
 //
-//        postsArrayList = dmbDatabase.getAllPostsDataArrayList();
+//        postsArrayList = dmbDatabase.getPostsDataArrayList();
 //        logger.info(Collections.singletonList(postsArrayList));
 //
 //
@@ -27,22 +27,22 @@ public class DBTest {
 //        dmbDatabase.addPostData("third post", "/r/iu", "ninaad", "this is the third post");
 //        dmbDatabase.addPostData("fourth post", "/r/iu", "ninaad", "this is the fourth post");
 //
-//        byte [] databytes = dmbDatabase.getAllPostsDataByteArray();
+//        byte [] databytes = dmbDatabase.getPostsDataByteArray();
 //
-//        postsArrayList = dmbDatabase.getAllPostsDataArrayList();
+//        postsArrayList = dmbDatabase.getPostsDataArrayList();
 //
 //        if (postsArrayList != null) {
 //            for (int i = 0; i < postsArrayList.size(); i++){
 //                dmbDatabase.removePostData(postsArrayList.get(i).getPostId(), postsArrayList.get(0).getPostOwnerId());
 //            }
 //        }
-//        postsArrayList = dmbDatabase.getAllPostsDataArrayList();
+//        postsArrayList = dmbDatabase.getPostsDataArrayList();
 //        logger.info("on removing all records");
 //        logger.info(Collections.singletonList(postsArrayList));
 //
-//        dmbDatabase.addAllPostsDataByteArray(databytes);
+//        dmbDatabase.addPostsDataFromByteArray(databytes);
 //
-//        postsArrayList = dmbDatabase.getAllPostsDataArrayList();
+//        postsArrayList = dmbDatabase.getPostsDataArrayList();
 //        logger.info("after adding back all records");
 //        logger.info(Collections.singletonList(postsArrayList));
 
@@ -53,8 +53,8 @@ public class DBTest {
         }
         logger.info("getting records with same topic");
         logger.info("" + dmbDatabase.getAllPostsDataByTopicArrayList("/r/" + 5).size());
-        logger.info("" + dmbDatabase.getAllPostsDataArrayList().size());
-//        dmbDatabase.deleteTables();
+        logger.info("" + dmbDatabase.getPostsDataArrayList().size());
+//        dmbDatabase.truncateTables();
     }
 
 }
