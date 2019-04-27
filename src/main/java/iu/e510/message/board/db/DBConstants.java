@@ -38,4 +38,8 @@ public class DBConstants {
     public static final String DMB_FEEDBACK_CREATED_COLUMN = "reply_created";
     public static final String DMB_FEEDBACK_UPVOTES_COLUMN = "reply_upvotes";
     public static final String DMB_FEEDBACK_DOWNVOTES_COLUMN = "reply_downvotes";
+
+
+    /*key for json array containing replies to specific post*/
+    public static final String DMB_REPLIES_LIST_KEY = "replies_list";
 }
