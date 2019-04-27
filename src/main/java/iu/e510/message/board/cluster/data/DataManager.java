@@ -1,5 +1,6 @@
 package iu.e510.message.board.cluster.data;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -15,6 +16,10 @@ public interface DataManager {
     Set<String> getAllTopics();
 
     void setConsistency(boolean consistency);
+
+    String getNodeId();
+
+    Set<String> getNodeIdsForTopic(String topic);
 
     boolean getConsistency();
 

@@ -147,6 +147,16 @@ public class DataManagerImpl implements DataManager {
     }
 
     @Override
+    public String getNodeId() {
+        return myNodeID;
+    }
+
+    @Override
+    public Set<String> getNodeIdsForTopic(String topic) {
+        return clusterManager.getHashingNodes(topic);
+    }
+
+    @Override
     public boolean getConsistency() {
         return this.consistency.get();
     }

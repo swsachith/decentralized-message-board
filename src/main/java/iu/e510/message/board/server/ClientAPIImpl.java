@@ -12,10 +12,12 @@ import java.util.List;
 public class ClientAPIImpl extends UnicastRemoteObject implements ClientAPI {
     private static Logger logger = LoggerFactory.getLogger(ClientAPI.class);
     private DataManager dataManager;
+    private String myNodeId;
 
-    public ClientAPIImpl(DataManager dataManager) throws RemoteException {
+    public ClientAPIImpl(String myNodeId, DataManager dataManager) throws RemoteException {
         super();
         this.dataManager = dataManager;
+        this.myNodeId = myNodeId;
     }
 
     @Override
