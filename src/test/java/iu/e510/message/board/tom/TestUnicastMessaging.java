@@ -17,8 +17,7 @@ public class TestUnicastMessaging {
     @BeforeSuite
     public static void setup() {
         clock = LamportClock.getClock();
-        messageService = new MessageServiceImpl(unicastServerBindURL, unicastServerBindURL, null,
-                null);
+        messageService = new MessageServiceImpl(unicastServerBindURL, unicastServerBindURL, null);
     }
 
     @Test
@@ -26,7 +25,7 @@ public class TestUnicastMessaging {
         Assert.assertEquals(0, clock.get());
     }
 
-    @Test (dependsOnMethods = { "testInit" })
+    @Test(dependsOnMethods = {"testInit"})
     public void testMessageSent() {
         clock.set(0);
         messageService.send_unordered(new Payload<>("hello world"), unicastServerBindURL,

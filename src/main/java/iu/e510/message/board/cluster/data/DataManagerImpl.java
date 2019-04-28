@@ -43,7 +43,6 @@ public class DataManagerImpl implements DataManager {
     private ClusterManager clusterManager;
 
     public DataManagerImpl(String nodeID, MessageService messageService,
-                           DataAdapter dataAdapter,
                            BlockingQueue<Message> internalMessageQueue,
                            ClusterManager clusterManager) throws Exception {
         logger.info("Initializing the Data Manager!");
@@ -54,7 +53,6 @@ public class DataManagerImpl implements DataManager {
         this.consistency = new AtomicBoolean(true);
         this.messageService = messageService;
         this.internalMessageQueue = internalMessageQueue;
-        this.dataAdapter = dataAdapter;
         this.clusterManager = clusterManager;
 
         this.messsageExecutor = new MesssageExecutor();
@@ -70,7 +68,12 @@ public class DataManagerImpl implements DataManager {
             zkManager.create(zkMyTopicStore, SerializationUtils.serialize(""), CreateMode.PERSISTENT);
         } else {
             logger.info("Existing topics found for my node ID. Hence restoring the configurations!");
-            this.myTopics = SerializationUtils.deserialize(zkManager.getData(zkMyTopicStore));
+            Object obj = SerializationUtils.deserialize(zkManager.getData(zkMyTopicStore));
+            if (obj instanceof HashSet) {
+                this.myTopics = SerializationUtils.deserialize(zkManager.getData(zkMyTopicStore));
+            } else {
+                this.myTopics = new HashSet<>();
+            }
         }
 
         this.messsageExecutor.start();

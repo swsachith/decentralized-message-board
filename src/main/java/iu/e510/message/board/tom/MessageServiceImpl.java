@@ -33,7 +33,7 @@ public class MessageServiceImpl implements MessageService {
     private BlockingQueue<Message> superNodeMsgQueue;
     private DataAdapter dataAdapter;
 
-    public MessageServiceImpl(String serverBindURI, String nodeID, DataAdapter dataAdapter,
+    public MessageServiceImpl(String serverBindURI, String nodeID,
                               BlockingQueue<Message> superNodeMsgQueue) {
         config = new Config();
         clock = LamportClock.getClock();
@@ -48,7 +48,7 @@ public class MessageServiceImpl implements MessageService {
         this.messageReceiver = new MessageReceiver(context, this.serverBindURI, this.messageHandler);
         this.messageDeliveryService = new MessageDeliveryService(this.messageQueue, nodeID, this.deliveryHandler);
 
-        this.dataAdapter = dataAdapter;
+//        this.dataAdapter = dataAdapter;
         this.superNodeMsgQueue = superNodeMsgQueue;
 
         this.messageReceiver.start();

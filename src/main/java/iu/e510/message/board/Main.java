@@ -25,6 +25,6 @@ public class Main {
         DBService dbService = new DBService(nodeID);
         dbService.getConnection();
         Server server = new Server(nodeID);
-        server.run();
+//        server.run();
     }
 }
