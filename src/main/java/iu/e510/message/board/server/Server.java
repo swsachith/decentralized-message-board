@@ -38,7 +38,7 @@ public class Server {
         // Binding the RMI client stubs
         configRMIRegistry(RMI_HOST, RMI_PORT);
         ClientAPI clientAPI = new ClientAPIImpl(dataManager);
-        Naming.bind("//" + RMI_HOST + ":" + RMI_PORT + "/" + nodeID, clientAPI);
+        Naming.bind("//" + RMI_HOST + ":" + RMI_PORT + "/MessageBoardServer" , clientAPI);
         logger.info("The client api is ready to accept requests");
     }
 
