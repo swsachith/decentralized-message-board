@@ -47,36 +47,66 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public void upvotePost(String topic, int postID) {
-
+        try {
+            clientAPI.upvotePost(clientID, topic, postID);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void downvotePost(String topic, int postID) {
-
+        try {
+            clientAPI.downvotePost(clientID, topic, postID);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void replyPost(String topic, int postID, String content) {
-
+        try {
+            clientAPI.replyPost("temp", topic, postID, content);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void upvoteReply(String topic, int postID, int replyID) {
-
+        try {
+            clientAPI.upvoteReply(clientID, topic, postID, replyID);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void downvoteReply(String topic, int postID, int replyID) {
-
+        try {
+            clientAPI.downvoteReply(clientID, topic, postID, replyID);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public DMBPost getPost(String topic, int postID) {
+        try {
+            return clientAPI.getPost(clientID, topic, postID);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
         return null;
     }
 
     @Override
     public List<DMBPost> getPosts(String topic) {
+        try {
+            return clientAPI.getPosts(clientID, topic);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
         return null;
     }
 

@@ -170,6 +170,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
                     " WHERE " + DMB_POST_TOPIC_COLUMN + " = ?";
 
             PreparedStatement statement = connection.prepareStatement(selectPostsByTopicQuery);
+            statement.setString(1, pTopic);
             ResultSet resultSet = statement.executeQuery();
             return getPostBytesFromRS(resultSet);
         } catch (JSONException | SQLException e) {
@@ -395,6 +396,49 @@ public class DMBDatabaseImpl implements DMBDatabase {
         } catch (SQLException e) {
             logger.info(e.getMessage());
         }
+    }
+
+    @Override
+    public DMBPost getPostDataByPostId(int pId) {
+        String checkIfPostExistsSql = "SELECT count(*) AS rowcount FROM " + DMB_POSTS_TABLE +
+                " WHERE " + DMB_POST_ID_COLUMN + " = ?";
+        try
+        {
+            PreparedStatement postExistsStmt = connection.prepareStatement(checkIfPostExistsSql, ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
+            postExistsStmt.setInt(1, pId);
+
+            ResultSet postExistsSet = postExistsStmt.executeQuery();
+            postExistsSet.next();
+            int rowcount = postExistsSet.getInt("rowcount");
+            postExistsSet.close();
+
+            logger.info("rowcount = " + rowcount);
+
+            if (rowcount > 0) {
+                DMBPost post = new DMBPost();
+
+                String selectPostsByTopicQuery = "SELECT * FROM " + DMB_POSTS_TABLE +
+                        " WHERE " + DMB_POST_ID_COLUMN + " = ? LIMIT 1";
+
+                PreparedStatement statement = connection.prepareStatement(selectPostsByTopicQuery);
+                ResultSet resultSet = statement.executeQuery();
+                post.setPostId(resultSet.getInt(DMB_POST_ID_COLUMN));
+                post.setPostOwnerId(resultSet.getString(DMB_POST_OWNER_COLUMN));
+                post.setPostTitle(resultSet.getString(DMB_POST_TITLE_COLUMN));
+                post.setPostDescription(resultSet.getString(DMB_POST_DESCRIPTION_COLUMN));
+                post.setPostUpvotes(resultSet.getInt(DMB_POST_UPVOTES_COLUMN));
+                post.setPostDownvotes(resultSet.getInt(DMB_POST_DOWNVOTES_COLUMN));
+                post.setPostTimeStamp(resultSet.getTimestamp(DMB_POST_CREATED_COLUMN).getTime());
+                post.setPostReplies(getRepliesByPostIdArrayList(pId));
+                return post;
+            } else {
+                return null;
+            }
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+        return null;
     }
 
 

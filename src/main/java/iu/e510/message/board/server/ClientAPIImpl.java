@@ -64,7 +64,7 @@ public class ClientAPIImpl extends UnicastRemoteObject implements ClientAPI {
     @Override
     public DMBPost getPost(String clientID, String topic, int postID) {
         logger.info("Received a get post by id request from: " + clientID + "\tfor post id: " + postID);
-        return null;
+        return database.getPostDataByPostId(postID);
     }
 
     @Override

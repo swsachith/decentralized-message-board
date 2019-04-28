@@ -16,6 +16,7 @@ public interface DMBDatabase {
     void truncateTables();
     void deleteTables();
 
+    DMBPost getPostDataByPostId(int pId);
     ArrayList<DMBPost> getPostsDataArrayList();
     ArrayList<DMBPost> getPostsDataByTopicArrayList(String pTopic);
     void addPostData(String pTitle, String pTopic, String pOwner, String pDescription);
