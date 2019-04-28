@@ -104,7 +104,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
      * get all posts as an array list from the database
      */
     @Override
-    public ArrayList<DMBPost> getAllPostsDataByTopicArrayList(String pTopic) {
+    public ArrayList<DMBPost> getPostsDataByTopicArrayList(String pTopic) {
         try {
 
             String selectPostsByTopicQuery = "SELECT * FROM " + DMB_POSTS_TABLE +
@@ -577,10 +577,10 @@ public class DMBDatabaseImpl implements DMBDatabase {
     /**
      * Up vote a post
      * @param pId
-     * @param pOwner
+     * @param pClient
      */
     @Override
-    public void upVotePost(int pId, String pOwner) {
+    public void upVotePost(int pId, String pClient) {
         String postsSql = "UPDATE " + DMB_POSTS_TABLE +
                 " SET " + DMB_POST_UPVOTES_COLUMN + " = " + DMB_POST_UPVOTES_COLUMN + " + 1 " +
                 " WHERE " + DMB_POST_ID_COLUMN + " = ?";
@@ -602,10 +602,10 @@ public class DMBDatabaseImpl implements DMBDatabase {
     /**
      * Down vote a post
      * @param pId
-     * @param pOwner
+     * @param pClient
      */
     @Override
-    public void downVotePost(int pId, String pOwner) {
+    public void downVotePost(int pId, String pClient) {
         String postsSql = "UPDATE " + DMB_POSTS_TABLE +
                 " SET " + DMB_POST_DOWNVOTES_COLUMN + " = " + DMB_POST_DOWNVOTES_COLUMN + " + 1 " +
                 " WHERE " + DMB_POST_ID_COLUMN + " = ?";
@@ -627,10 +627,10 @@ public class DMBDatabaseImpl implements DMBDatabase {
     /**
      * Up vote a reply
      * @param rId
-     * @param rOwner
+     * @param rClient
      */
     @Override
-    public void upVoteReply(int rId, String rOwner) {
+    public void upVoteReply(int rId, String rClient) {
         String repliesSql = "UPDATE " + DMB_REPLIES_TABLE +
                 " SET " + DMB_REPLY_UPVOTES_COLUMN + " = " + DMB_REPLY_UPVOTES_COLUMN + " + 1 " +
                 " WHERE " + DMB_REPLY_ID_COLUMN + " = ?";
@@ -648,10 +648,10 @@ public class DMBDatabaseImpl implements DMBDatabase {
     /**
      *  Down vote a reply
      * @param rId
-     * @param rOwner
+     * @param rClient
      */
     @Override
-    public void downVoteReply(int rId, String rOwner) {
+    public void downVoteReply(int rId, String rClient) {
         String repliesSql = "UPDATE " + DMB_REPLIES_TABLE +
                 " SET " + DMB_REPLY_DOWNVOTES_COLUMN + " = " + DMB_REPLY_DOWNVOTES_COLUMN + " + 1 " +
                 " WHERE " + DMB_REPLY_ID_COLUMN + " = ?";

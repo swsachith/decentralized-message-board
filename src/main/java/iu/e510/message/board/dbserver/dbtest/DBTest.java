@@ -52,7 +52,7 @@ public class DBTest {
                     i +" post");
         }
         logger.info("getting records with same topic");
-        logger.info("" + dmbDatabase.getAllPostsDataByTopicArrayList("/r/" + 5).size());
+        logger.info("" + dmbDatabase.getPostsDataByTopicArrayList("/r/" + 5).size());
         logger.info("" + dmbDatabase.getPostsDataArrayList().size());
 //        dmbDatabase.truncateTables();
     }
