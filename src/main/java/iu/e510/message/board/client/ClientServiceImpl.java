@@ -27,7 +27,12 @@ public class ClientServiceImpl implements ClientService {
         String RMI_HOST = config.getConfig(Constants.RMI_REGISTRY_HOST);
         int RMI_PORT = Integer.parseInt(config.getConfig(Constants.RMI_REGISTRY_PORT));
         this.superNodeList = getSuperNodeList();
-        setupRMIRegistry();
+        try {
+            registry = LocateRegistry.getRegistry(RMI_HOST, RMI_PORT);
+            clientAPI = getWorkingClientAPI();
+        } catch (RemoteException e) {
+            logger.error("Error occurred while getting the registry!");
+        }
     }
 
     @Override
@@ -35,7 +40,7 @@ public class ClientServiceImpl implements ClientService {
         try {
             return clientAPI.post(clientID, topic, title, content);
         } catch (RemoteException e) {
-            serverConnectionRefresh();
+           serverConnectionRefresh();
         }
         return true;
     }
@@ -79,15 +84,14 @@ public class ClientServiceImpl implements ClientService {
      * Returns a working Supernode RMI object from the provided Super node list.
      * @return
      */
-    private void setupRMIRegistry() {
+    private ClientAPI getWorkingClientAPI() {
+        ClientAPI clientAPI;
         for (String superNode : superNodeList) {
             logger.info("Trying to connect to: " + superNode);
             try {
-                String[] splits = superNode.split(":");
-                registry = LocateRegistry.getRegistry(splits[0], Integer.parseInt(splits[1]));
-                clientAPI = (ClientAPI) registry.lookup("MessageBoardServer");
+                clientAPI = (ClientAPI) registry.lookup(superNode);
                 logger.info("Connected to Super Node: " + superNode);
-                return;
+                return clientAPI;
             } catch (Exception e) {
                 logger.info(superNode + " cannot be reached. Hence trying the next node");
             }
@@ -100,12 +104,11 @@ public class ClientServiceImpl implements ClientService {
      */
     private void serverConnectionRefresh() {
         logger.error("Error occurred trying to access the Super Node! Please retry the command");
-        setupRMIRegistry();
+        getWorkingClientAPI();
     }
 
     /**
      * Reads the list of super nodes from the configs and return an ArrayList
-     *
      * @return
      */
     private List<String> getSuperNodeList() {
