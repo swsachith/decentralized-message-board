@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.List;
+import java.util.Set;
 
 /**
  * This is the client side API.
@@ -13,19 +14,21 @@ import java.util.List;
  */
 public interface ClientAPI extends Remote, Serializable {
 
+    Set<String> getServersForTopic(String topic);
+
     // Posting, upvoting and downvoting posts
-    boolean post(String clientID, String topic, String title, String content) throws RemoteException;
+    Set<String> post(String clientID, String topic, String title, String content) throws RemoteException;
 
-    void upvotePost(String clientID, String topic, int postID) throws RemoteException;
+    Set<String> upvotePost(String clientID, String topic, int postID) throws RemoteException;
 
-    void downvotePost(String clientID, String topic, int postID) throws RemoteException;
+    Set<String> downvotePost(String clientID, String topic, int postID) throws RemoteException;
 
     // one-level-reply to posts, upvoting and downvoting replies
-    void replyPost(String clientID, String topic, int postID, String content) throws RemoteException;
+    Set<String> replyPost(String clientID, String topic, int postID, String content) throws RemoteException;
 
-    void upvoteReply(String clientID, String topic, int postID, int replyID) throws RemoteException;
+    Set<String> upvoteReply(String clientID, String topic, int postID, int replyID) throws RemoteException;
 
-    void downvoteReply(String clientID, String topic, int postID, int replyID) throws RemoteException;
+    Set<String> downvoteReply(String clientID, String topic, int postID, int replyID) throws RemoteException;
 
     // retrieval of data
     DMBPost getPost(String clientID, String topic, int postID) throws RemoteException;
