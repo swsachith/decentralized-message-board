@@ -21,4 +21,13 @@ public class ReplyVoteBean extends BaseBean {
             database.upVoteReply(replyID, getClientID());
         }
     }
+
+    @Override
+    public String toString() {
+        return "ReplyVoteBean{" +
+                "vote=" + vote +
+                ", postID=" + postID +
+                ", replyID=" + replyID +
+                '}';
+    }
 }

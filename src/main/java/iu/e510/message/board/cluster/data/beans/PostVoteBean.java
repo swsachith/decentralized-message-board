@@ -20,4 +20,12 @@ public class PostVoteBean extends BaseBean {
             database.downVotePost(postID, getClientID());
         }
     }
+
+    @Override
+    public String toString() {
+        return "PostVoteBean{" +
+                "vote=" + vote +
+                ", postID=" + postID +
+                '}';
+    }
 }

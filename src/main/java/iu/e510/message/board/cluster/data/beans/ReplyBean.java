@@ -17,4 +17,12 @@ public class ReplyBean extends BaseBean {
     public void processBean(DMBDatabase database) {
         database.addReplyData(postID, getClientID(), content);
     }
+
+    @Override
+    public String toString() {
+        return "ReplyBean{" +
+                "postID=" + postID +
+                ", content='" + content + '\'' +
+                '}';
+    }
 }

@@ -16,4 +16,12 @@ public class PostBean extends BaseBean {
     public void processBean(DMBDatabase database) {
         database.addPostData(title, getTopic(), getClientID(), content);
     }
+
+    @Override
+    public String toString() {
+        return "PostBean{" +
+                "title='" + title + '\'' +
+                ", content='" + content + '\'' +
+                '}';
+    }
 }

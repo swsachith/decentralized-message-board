@@ -189,10 +189,12 @@ public class DataManagerImpl implements DataManager {
         Set<String> nodes = getNodeIdsForTopic(dataBean.getTopic());
 
         if (nodes.contains(myNodeID) && isConsistent()){
+            logger.info("Sending multicast: " + dataBean.toString());
             messageService.send_ordered(new Payload<>(dataBean), nodes, MessageType.CLIENT_DATA);
 
             return Collections.emptySet();
         } else {
+            logger.info("Received unrelated topic: " + dataBean.getTopic());
             return nodes;
         }
     }

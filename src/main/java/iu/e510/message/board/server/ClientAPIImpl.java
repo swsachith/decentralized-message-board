@@ -1,8 +1,8 @@
 package iu.e510.message.board.server;
 
 import iu.e510.message.board.cluster.data.DataManager;
-import iu.e510.message.board.cluster.data.beans.BaseBean;
 import iu.e510.message.board.cluster.data.beans.PostBean;
+import iu.e510.message.board.cluster.data.beans.ReplyBean;
 import iu.e510.message.board.db.model.DMBPost;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,8 +53,16 @@ public class ClientAPIImpl extends UnicastRemoteObject implements ClientAPI {
     }
 
     @Override
-    public Set<String> replyPost(String clientID, String topic, int postID, String content) {
-        return Collections.emptySet();
+    public Set<String> replyPost(String clientID, String topic, int postID, String content) throws RemoteException {
+        logger.info("Received a post reply from: " + clientID + "\tfor topic: " + topic +
+                "\tpostid: " + postID);
+
+        ReplyBean reply = new ReplyBean(clientID, topic, postID, content);
+        try {
+            return dataManager.addData(reply);
+        } catch (Exception e) {
+            throw new RemoteException("Unable to publish post reply", e);
+        }
 
     }
 

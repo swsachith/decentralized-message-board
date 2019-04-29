@@ -142,10 +142,10 @@ public class MessageServiceImpl implements MessageService {
 
             // multicast the message to all the other recipients
             for (String recipient : recipients) {
-                if (recipient.equals(serverBindURI)) {
+                if (recipient.equals(nodeID)) {
                     continue;
                 }
-                messageSender.sendMessage(releaseMessage, recipient, clock.get());
+                messageSender.sendMessage(releaseMessage, getUrl(recipient), clock.get());
             }
         }
     }
