@@ -1,12 +1,16 @@
 package iu.e510.message.board.tom;
 
 import iu.e510.message.board.tom.common.LamportClock;
+import iu.e510.message.board.tom.common.Message;
 import iu.e510.message.board.tom.common.MessageType;
 import iu.e510.message.board.tom.common.Payload;
+import iu.e510.message.board.tom.core.MessageHandler;
 import org.testng.Assert;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
+
+import java.util.concurrent.ConcurrentSkipListSet;
 
 public class TestUnicastMessaging {
 
@@ -17,8 +21,20 @@ public class TestUnicastMessaging {
     @BeforeSuite
     public static void setup() {
         clock = LamportClock.getClock();
-        messageService = new MessageServiceImpl(unicastServerBindURL, unicastServerBindURL, null,
-                null);
+        messageService = new MessageServiceImpl(unicastServerBindURL, unicastServerBindURL);
+        messageService.init(new MessageHandler() {
+            LamportClock clock = LamportClock.getClock();
+            @Override
+            public Message processMessage(Message message) {
+                clock.incrementAndGet();
+                return null;
+            }
+
+            @Override
+            public void setMessageQueue(ConcurrentSkipListSet<Message> messageQueue) {
+
+            }
+        });
     }
 
     @Test

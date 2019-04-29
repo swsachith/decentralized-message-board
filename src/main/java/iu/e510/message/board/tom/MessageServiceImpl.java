@@ -1,6 +1,5 @@
 package iu.e510.message.board.tom;
 
-import iu.e510.message.board.db.DMBDatabase;
 import iu.e510.message.board.tom.common.LamportClock;
 import iu.e510.message.board.tom.common.Message;
 import iu.e510.message.board.tom.common.MessageType;
@@ -13,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.zeromq.ZContext;
 
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public class MessageServiceImpl implements MessageService {
@@ -29,32 +27,28 @@ public class MessageServiceImpl implements MessageService {
     private DeliveryHandler deliveryHandler;
     private ConcurrentSkipListSet<Message> messageQueue;
     private Config config;
+    private ZContext context;
 
-    private BlockingQueue<Message> superNodeMsgQueue;
-    private DMBDatabase database;
-
-    public MessageServiceImpl(String serverBindURI, String nodeID,
-                              BlockingQueue<Message> superNodeMsgQueue,
-                              DMBDatabase database) {
+    public MessageServiceImpl(String serverBindURI, String nodeID) {
         config = new Config();
         clock = LamportClock.getClock();
         this.serverBindURI = serverBindURI;
         this.nodeID = nodeID;
         this.messageQueue = new ConcurrentSkipListSet<>();
-        ZContext context = new ZContext();
+        this.context = new ZContext();
         this.messageSender = new MessageSender(context, Integer.parseInt(config.getConfig(Constants.SEND_TIMEOUT)));
-        this.messageHandler = new MessageHandlerImpl();
         this.deliveryHandler = new DeliveryHandlerImpl();
-
-        this.messageReceiver = new MessageReceiver(context, this.serverBindURI, this.messageHandler);
         this.messageDeliveryService = new MessageDeliveryService(this.messageQueue, nodeID, this.deliveryHandler);
-
-        this.superNodeMsgQueue = superNodeMsgQueue;
-        this.database = database;
-
-        this.messageReceiver.start();
         this.messageDeliveryService.start();
         logger.info("Started the messaging service with pid: " + nodeID);
+    }
+
+    @Override
+    public void init(MessageHandler messageHandler) {
+        this.messageHandler = messageHandler;
+        this.messageHandler.setMessageQueue(this.messageQueue);
+        this.messageReceiver = new MessageReceiver(context, this.serverBindURI, this.messageHandler);
+        this.messageReceiver.start();
     }
 
     @Override
@@ -116,50 +110,20 @@ public class MessageServiceImpl implements MessageService {
         return "tcp://" + id;
     }
 
-    private void nonBlockingMessageProcessing(Message message) {
-        logger.debug("Saving message for async process: " + message.toString());
-        try {
-            superNodeMsgQueue.put(message);
-        } catch (InterruptedException e) {
-            logger.error("Unable to access queue ", e);
-            throw new RuntimeException("Unable to access queue ", e);
-        }
-    }
-
-    private Message blockingMessageProcessing(Message message) {
-        logger.debug("Processing message: " + message.toString());
-
-        if (message.getMessageType() == MessageType.DATA_REQUEST) {
-            String topic = (String) message.getPayload().getContent();
-            logger.debug("Data request received for topic: " + topic);
-
-            byte[] data = database.getPostsDataByTopicByteArray(topic);
-
-            return new Message(new Payload<>(nodeID, data), nodeID, clock.get(), true,
-                    MessageType.DATA_RESPONSE);
-        } else {
-            throw new RuntimeException("Unknown message type for sync process: " + message);
-        }
-    }
-
-
-
-
     protected class DeliveryHandlerImpl implements DeliveryHandler {
 
         @Override
         public void deliverReleaseMessage(Message message) {
-            Message releaseMessage = new Message(message.getPayload(), nodeID,
+            Message releaseMessage = new Message(new Payload<>("Release"), nodeID,
                     clock.incrementAndGet(), false, message.getMessageType());
             releaseMessage.setRelease(message.getId());
 
             Set<String> recipients = message.getRecipients();
 
-            // Add delivering into data manager by putting the message into the queue
+            //todo: add delivering into data manager
             // deliver the message to yourself
             logger.info("[pid:" + nodeID + "][clock:" + clock.get() + "] Delivering message: "
                     + message.getId() + " to myself");
-            nonBlockingMessageProcessing(message);
 
             // multicast the message to all the other recipients
             for (String recipient : recipients) {
@@ -169,80 +133,5 @@ public class MessageServiceImpl implements MessageService {
                 messageSender.sendMessage(releaseMessage, recipient, clock.get());
             }
         }
-    }
-
-
-    protected class MessageHandlerImpl implements MessageHandler {
-        private Logger logger = LoggerFactory.getLogger(MessageHandlerImpl.class);
-
-        public Message processMessage(Message message) {
-            int receivedClock = message.getClock();
-            // clock update
-            if (receivedClock > clock.get()) {
-                clock.set(receivedClock);
-                logger.debug("[nodeID=" + nodeID + "] [ClockUpdate]Received message from: " + message.getNodeID() +
-                        ". Updating clock to the receiver's clock: " + receivedClock);
-            }
-            // increment the clock for the message received.
-            clock.incrementAndGet();
-
-            // if message is an ack, do not resend
-            if (message.isAck()) {
-                logger.debug("[nodeID:" + nodeID + "][clock:" + clock.get() + "] Received Ack for: " + message.getAck() +
-                        " from: " + message.getNodeID());
-                return null;
-            }
-
-            // Deliver messages here
-            // handling the unicast vs multicast
-            boolean unicast = message.isUnicast();
-            if (unicast) {
-                return processUnicastMessage(message);
-            } else {
-                return processMulticastMessage(message);
-            }
-        }
-
-        private Message processUnicastMessage(Message message) {
-            logger.info("Received message: " + message.getPayload() + " from: " + message.getNodeID() + " of type: " +
-                    message.getMessageType());
-
-            MessageType type = message.getMessageType();
-
-            if (type.equals(MessageType.TRANSFER) || type.equals(MessageType.SYNC )) {
-                nonBlockingMessageProcessing(message);
-                return null;
-            } else {
-                return blockingMessageProcessing(message);
-            }
-        }
-
-        private Message processMulticastMessage(Message message) {
-            if (message.isRelease()) {
-                // if message is a release request, deliver it, don't have to reply
-                logger.info("[nodeID:" + nodeID + "][clock:" + clock.get() + "] Received release request. " +
-                        "Delivering multicast message: " + message.getRelease() + " with clock: " + message.getClock()
-                        + " from: " + message.getNodeID());
-                message.setId(message.getRelease());
-
-                nonBlockingMessageProcessing(message);
-
-                messageQueue.remove(message);
-                logger.info("Message queue size: " + messageQueue.size());
-                return null;
-            }
-            // add to the message queue
-            messageQueue.add(message);
-            logger.info("Added multicast message to the queue. Current queue size: " + messageQueue.size());
-            // updating the clock for the reply event
-            int sendClock = clock.incrementAndGet();
-            logger.info("[pid:" + nodeID + "][clock:" + sendClock + "] Sending ack for message: "
-                    + message.getId() + " to: " + message.getNodeID());
-            Message ack = new Message(new Payload<>("Ack"), nodeID, sendClock, true,
-                    message.getMessageType());
-            ack.setAck(message.getId());
-            return ack;
-        }
-
     }
 }

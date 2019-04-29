@@ -40,8 +40,7 @@ public class Server {
 
         this.database = new DMBDatabaseImpl(nodeID);
 
-        this.messageService = new MessageServiceImpl("tcp://" + id, id,
-                superNodeMsgQueue, database);
+        this.messageService = new MessageServiceImpl("tcp://" + id, id);
 
         this.clusterManager = new ClusterManager(id, messageService);
 

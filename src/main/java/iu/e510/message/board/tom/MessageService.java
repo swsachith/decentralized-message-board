@@ -3,6 +3,7 @@ package iu.e510.message.board.tom;
 import iu.e510.message.board.tom.common.Message;
 import iu.e510.message.board.tom.common.MessageType;
 import iu.e510.message.board.tom.common.Payload;
+import iu.e510.message.board.tom.core.MessageHandler;
 
 import java.util.Set;
 
@@ -32,4 +33,9 @@ public interface MessageService {
      * Get the connection url for a given port and ip (id)
      */
     String getUrl(String id);
+
+    /**
+     * Set the message handler to process the messages
+     */
+    void init(MessageHandler messageHandler);
 }

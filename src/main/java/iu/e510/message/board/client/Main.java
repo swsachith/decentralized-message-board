@@ -9,9 +9,6 @@ import java.util.Scanner;
 import java.util.Set;
 
 public class Main {
-    public static final String POST = "post";
-    public static final String REPLY = "reply";
-
     public static void main(String[] args) {
         Config config = new Config();
         String clientID = config.getConfig(Constants.CLIENT_ID);
@@ -28,16 +25,18 @@ public class Main {
                 System.exit(0);
             }
             else if (tokens.length < 3) {
-                System.out.println("Wrong input format. Correct Format: <unicast/multicast>, message, recipient");
+                //todo: add a comprehensive input format
+                System.out.println("Wrong input format.");
                 continue;
             }
             String method = tokens[0];
             boolean result = false;
             switch (method) {
-                case POST:
+                case "post":
                     result = clientService.post(tokens[1].trim(), tokens[2].trim(), tokens[3].trim());
                     break;
-                case REPLY:
+                case "reply":
+                    result = clientService.replyPost(tokens[1].trim(), Integer.parseInt(tokens[2].trim()), tokens[3].trim());
                     break;
                 default:
                     break;
