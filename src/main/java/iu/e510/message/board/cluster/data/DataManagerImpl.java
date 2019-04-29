@@ -253,6 +253,7 @@ public class DataManagerImpl implements DataManager {
                         Message response = messageService.send_unordered(new Payload<>(myNodeID),
                                 messageService.getUrl(nodeToTalk), MessageType.TRANSFER_TOPICS);
 
+                        superNodeMsgQueue.add(response);
 
                     } else if (message.getMessageType() == MessageType.DELETE_TOPICS) {
                         logger.info("Delete topics received!");
@@ -398,16 +399,18 @@ public class DataManagerImpl implements DataManager {
 
                 Set<String> delete = transferTopics.get("delete");
                 try {
-                    superNodeMsgQueue.put(new Message(new Payload<>(delete), myNodeID, clock.get(),
-                            true, MessageType.DELETE_TOPICS));
+                    if (!delete.isEmpty()) {
+                        superNodeMsgQueue.put(new Message(new Payload<>(delete), myNodeID, clock.get(),
+                                true, MessageType.DELETE_TOPICS));
+                    }
                 } catch (InterruptedException e) {
                     throw new RuntimeException("Unable to access the queue", e);
                 }
 
                 Set<String> transfer = transferTopics.get("transfer");
 
-                return new Message(new Payload<>(transfer), myNodeID, clock.get(),
-                        true, MessageType.SYNC);
+                return new Message(new Payload<>(transfer), myNodeID, clock.get(), true,
+                        MessageType.SYNC);
             } else {
                 throw new RuntimeException("Unknown message type for sync process: " + message);
             }
