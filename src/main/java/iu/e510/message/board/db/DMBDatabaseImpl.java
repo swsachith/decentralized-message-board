@@ -104,7 +104,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
      * get all posts as an array list from the database
      */
     @Override
-    public ArrayList<DMBPost> getAllPostsDataByTopicArrayList(String pTopic) {
+    public ArrayList<DMBPost> getPostsDataByTopicArrayList(String pTopic) {
         try {
 
             String selectPostsByTopicQuery = "SELECT * FROM " + DMB_POSTS_TABLE +
@@ -403,6 +403,49 @@ public class DMBDatabaseImpl implements DMBDatabase {
         }
     }
 
+    @Override
+    public DMBPost getPostDataByPostId(int pId) {
+        String checkIfPostExistsSql = "SELECT count(*) AS rowcount FROM " + DMB_POSTS_TABLE +
+                " WHERE " + DMB_POST_ID_COLUMN + " = ?";
+        try
+        {
+            PreparedStatement postExistsStmt = connection.prepareStatement(checkIfPostExistsSql, ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
+            postExistsStmt.setInt(1, pId);
+
+            ResultSet postExistsSet = postExistsStmt.executeQuery();
+            postExistsSet.next();
+            int rowcount = postExistsSet.getInt("rowcount");
+            postExistsSet.close();
+
+            logger.info("rowcount = " + rowcount);
+
+            if (rowcount > 0) {
+                DMBPost post = new DMBPost();
+
+                String selectPostsByTopicQuery = "SELECT * FROM " + DMB_POSTS_TABLE +
+                        " WHERE " + DMB_POST_ID_COLUMN + " = ? LIMIT 1";
+
+                PreparedStatement statement = connection.prepareStatement(selectPostsByTopicQuery);
+                ResultSet resultSet = statement.executeQuery();
+                post.setPostId(resultSet.getInt(DMB_POST_ID_COLUMN));
+                post.setPostOwnerId(resultSet.getString(DMB_POST_OWNER_COLUMN));
+                post.setPostTitle(resultSet.getString(DMB_POST_TITLE_COLUMN));
+                post.setPostDescription(resultSet.getString(DMB_POST_DESCRIPTION_COLUMN));
+                post.setPostUpvotes(resultSet.getInt(DMB_POST_UPVOTES_COLUMN));
+                post.setPostDownvotes(resultSet.getInt(DMB_POST_DOWNVOTES_COLUMN));
+                post.setPostTimeStamp(resultSet.getTimestamp(DMB_POST_CREATED_COLUMN).getTime());
+                post.setPostReplies(getRepliesByPostIdArrayList(pId));
+                return post;
+            } else {
+                return null;
+            }
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 
     /**
      * drop the tables if exist
@@ -583,10 +626,10 @@ public class DMBDatabaseImpl implements DMBDatabase {
     /**
      * Up vote a post
      * @param pId
-     * @param pOwner
+     * @param pClient
      */
     @Override
-    public void upVotePost(int pId, String pOwner) {
+    public void upVotePost(int pId, String pClient) {
         String postsSql = "UPDATE " + DMB_POSTS_TABLE +
                 " SET " + DMB_POST_UPVOTES_COLUMN + " = " + DMB_POST_UPVOTES_COLUMN + " + 1 " +
                 " WHERE " + DMB_POST_ID_COLUMN + " = ?";
@@ -608,10 +651,10 @@ public class DMBDatabaseImpl implements DMBDatabase {
     /**
      * Down vote a post
      * @param pId
-     * @param pOwner
+     * @param pClient
      */
     @Override
-    public void downVotePost(int pId, String pOwner) {
+    public void downVotePost(int pId, String pClient) {
         String postsSql = "UPDATE " + DMB_POSTS_TABLE +
                 " SET " + DMB_POST_DOWNVOTES_COLUMN + " = " + DMB_POST_DOWNVOTES_COLUMN + " + 1 " +
                 " WHERE " + DMB_POST_ID_COLUMN + " = ?";
@@ -633,10 +676,10 @@ public class DMBDatabaseImpl implements DMBDatabase {
     /**
      * Up vote a reply
      * @param rId
-     * @param rOwner
+     * @param rClient
      */
     @Override
-    public void upVoteReply(int rId, String rOwner) {
+    public void upVoteReply(int rId, String rClient) {
         String repliesSql = "UPDATE " + DMB_REPLIES_TABLE +
                 " SET " + DMB_REPLY_UPVOTES_COLUMN + " = " + DMB_REPLY_UPVOTES_COLUMN + " + 1 " +
                 " WHERE " + DMB_REPLY_ID_COLUMN + " = ?";
@@ -654,10 +697,10 @@ public class DMBDatabaseImpl implements DMBDatabase {
     /**
      *  Down vote a reply
      * @param rId
-     * @param rOwner
+     * @param rClient
      */
     @Override
-    public void downVoteReply(int rId, String rOwner) {
+    public void downVoteReply(int rId, String rClient) {
         String repliesSql = "UPDATE " + DMB_REPLIES_TABLE +
                 " SET " + DMB_REPLY_DOWNVOTES_COLUMN + " = " + DMB_REPLY_DOWNVOTES_COLUMN + " + 1 " +
                 " WHERE " + DMB_REPLY_ID_COLUMN + " = ?";
