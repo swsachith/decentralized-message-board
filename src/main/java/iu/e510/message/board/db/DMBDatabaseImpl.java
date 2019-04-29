@@ -170,6 +170,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
                     " WHERE " + DMB_POST_TOPIC_COLUMN + " = ?";
 
             PreparedStatement statement = connection.prepareStatement(selectPostsByTopicQuery);
+            statement.setString(1, pTopic);
             ResultSet resultSet = statement.executeQuery();
             return getPostBytesFromRS(resultSet);
         } catch (JSONException | SQLException e) {

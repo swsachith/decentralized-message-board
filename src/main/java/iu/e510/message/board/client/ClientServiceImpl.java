@@ -63,7 +63,7 @@ public class ClientServiceImpl implements ClientService {
      * If a server is not reachable, then updates and points to a working server in the given list.
      */
     private void serverConnectionRefresh() {
-        logger.error("Error occurred trying to access the Super Node! Please retry the command");
+        logger.error("Server connection refreshing");
         getWorkingClientAPI();
     }
 
@@ -156,27 +156,32 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public List<DMBPost> getPosts(String topic) {
         List<DMBPost> results = new ArrayList<>();
-        try {
-            // if the cache has a topic client mapping, use that. Else use the current clientAPI
-            ClientAPI topicClient = topicClientMap.get(topic);
-            if (topicClient != null) {
-                results = topicClient.getPosts(clientID, topic);
-            } else {
-                Set<String> nodes = clientAPI.getNodes(topic);
-                if (nodes != null) {
-                    topicClientMap.remove(topic);
-                    // if the contacted node does not have that topic, retry with the retry list.
-                    ClientAPI topicClientAPI = getClientAPI(nodes);
-                    results = topicClientAPI.getPosts(clientID, topic);
-                    if (!results.isEmpty()) {
-                        topicClientMap.put(topic, topicClientAPI);
-                        return results;
+        int i = 0;
+        while (i < serverRetries) {
+            try {
+                // if the cache has a topic client mapping, use that. Else use the current clientAPI
+                ClientAPI topicClient = topicClientMap.get(topic);
+                if (topicClient != null) {
+                    results = topicClient.getPosts(clientID, topic);
+                } else {
+                    Set<String> nodes = clientAPI.getNodes(topic);
+                    if (nodes != null) {
+                        topicClientMap.remove(topic);
+                        // if the contacted node does not have that topic, retry with the retry list.
+                        ClientAPI topicClientAPI = getClientAPI(nodes);
+                        results = topicClientAPI.getPosts(clientID, topic);
+                        if (!results.isEmpty()) {
+                            topicClientMap.put(topic, topicClientAPI);
+                            return results;
+                        }
                     }
                 }
+            } catch (Exception e) {
+                serverConnectionRefresh();
+                logger.debug("Retrying a different super node");
+            } finally {
+                i++;
             }
-        } catch (Exception e) {
-            logger.error("Error executing the method." + e.getMessage(), e);
-            return results;
         }
         return results;
     }
@@ -193,7 +198,7 @@ public class ClientServiceImpl implements ClientService {
         List<String> clientIDList = new ArrayList<>(clientIDSet);
         Collections.shuffle(clientIDList, new Random());
         for (String clientID : clientIDList) {
-            logger.info("Trying to connect to: " + clientID);
+            logger.debug("Trying to connect to: " + clientID);
             try {
                 clientAPI = (ClientAPI) registry.lookup(clientID);
                 return clientAPI;

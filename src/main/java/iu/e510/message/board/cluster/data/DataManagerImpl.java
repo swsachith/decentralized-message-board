@@ -322,7 +322,6 @@ public class DataManagerImpl implements DataManager {
                         " from: " + message.getNodeID());
                 return null;
             }
-            //todo: deliver messages here
             // handling the unicast vs multicast
             boolean unicast = message.isUnicast();
             if (unicast) {
@@ -349,7 +348,7 @@ public class DataManagerImpl implements DataManager {
         private Message processMulticastMessage(Message message) {
             if (message.isRelease()) {
                 // if message is a release request, deliver it, don't have to reply
-                logger.info("[nodeID:" + nodeID + "][clock:" + clock.get() + "] Received release request. " +
+                logger.debug("[nodeID:" + nodeID + "][clock:" + clock.get() + "] Received release request. " +
                         "Delivering multicast message: " + message.getRelease() + " with clock: " + message.getClock()
                         + " from: " + message.getNodeID());
                 message.setId(message.getRelease());
@@ -357,15 +356,15 @@ public class DataManagerImpl implements DataManager {
                 nonBlockingMessageProcessing(message);
 
                 messageQueue.remove(message);
-                logger.info("Message queue size: " + messageQueue.size());
+                logger.debug("Message queue size: " + messageQueue.size());
                 return null;
             }
             // add to the message queue
             messageQueue.add(message);
-            logger.info("Added multicast message to the queue. Current queue size: " + messageQueue.size());
+            logger.debug("Added multicast message to the queue. Current queue size: " + messageQueue.size());
             // updating the clock for the reply event
             int sendClock = clock.incrementAndGet();
-            logger.info("[pid:" + nodeID + "][clock:" + sendClock + "] Sending ack for message: "
+            logger.debug("[pid:" + nodeID + "][clock:" + sendClock + "] Sending ack for message: "
                     + message.getId() + " to: " + message.getNodeID());
             Message ack = new Message(new Payload<>("Ack"), nodeID, sendClock, true,
                     message.getMessageType());

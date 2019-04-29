@@ -37,13 +37,13 @@ public class Main {
     }
 
     private static void processInput(ClientService clientService, String[] tokens, String method) {
-        boolean successfull = false;
+        boolean successful = false;
         switch (method) {
             case "post":
-                successfull = clientService.post(tokens[1].trim(), tokens[2].trim(), tokens[3].trim());
+                successful = clientService.post(tokens[1].trim(), tokens[2].trim(), tokens[3].trim());
                 break;
             case "reply":
-                successfull = clientService.replyPost(tokens[1].trim(), Integer.parseInt(tokens[2].trim()), tokens[3].trim());
+                successful = clientService.replyPost(tokens[1].trim(), Integer.parseInt(tokens[2].trim()), tokens[3].trim());
                 break;
             case "getposts":
                 List<DMBPost> posts = clientService.getPosts(tokens[1].trim());
@@ -53,10 +53,12 @@ public class Main {
             default:
                 break;
         }
-        if (successfull) {
-            System.out.println("The request was successfully executed");
-        } else {
-            System.out.println("Posting failed. Please try again");
+        if (!method.equals("getposts")) {
+            if (successful) {
+                System.out.println("The request was successfully executed");
+            } else {
+                System.out.println("Posting failed. Please try again");
+            }
         }
     }
 }
