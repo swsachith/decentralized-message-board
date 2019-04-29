@@ -18,6 +18,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.LinkedBlockingDeque;
 
 public class Server {
@@ -31,6 +32,7 @@ public class Server {
     private Registry registry;
     private BlockingQueue<Message> superNodeMsgQueue;
     private DMBDatabase database;
+    private ConcurrentSkipListSet<Message> sharedMulticastQueue;
 
     public Server(String nodeID) throws Exception {
         this.id = nodeID;
@@ -39,13 +41,11 @@ public class Server {
         this.superNodeMsgQueue = new LinkedBlockingDeque<>();
 
         this.database = new DMBDatabaseImpl(nodeID);
-
-        this.messageService = new MessageServiceImpl("tcp://" + id, id);
-
+        this.sharedMulticastQueue = new ConcurrentSkipListSet<>();
+        this.messageService = new MessageServiceImpl("tcp://" + id, id, sharedMulticastQueue);
         this.clusterManager = new ClusterManager(id, messageService);
-
-        this.dataManager = new DataManagerImpl(id, messageService, superNodeMsgQueue,
-                clusterManager, database);
+        this.dataManager = new DataManagerImpl(id, messageService, superNodeMsgQueue, clusterManager, database,
+                sharedMulticastQueue);
 
 
         // Binding the RMI client stubs

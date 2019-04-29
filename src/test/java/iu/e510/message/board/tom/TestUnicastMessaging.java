@@ -21,18 +21,14 @@ public class TestUnicastMessaging {
     @BeforeSuite
     public static void setup() {
         clock = LamportClock.getClock();
-        messageService = new MessageServiceImpl(unicastServerBindURL, unicastServerBindURL);
+        ConcurrentSkipListSet<Message> messageQueue = new ConcurrentSkipListSet<>();
+        messageService = new MessageServiceImpl(unicastServerBindURL, unicastServerBindURL, messageQueue);
         messageService.init(new MessageHandler() {
             LamportClock clock = LamportClock.getClock();
             @Override
             public Message processMessage(Message message) {
                 clock.incrementAndGet();
                 return null;
-            }
-
-            @Override
-            public void setMessageQueue(ConcurrentSkipListSet<Message> messageQueue) {
-
             }
         });
     }
