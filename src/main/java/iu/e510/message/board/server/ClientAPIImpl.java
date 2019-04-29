@@ -26,12 +26,7 @@ public class ClientAPIImpl extends UnicastRemoteObject implements ClientAPI {
     @Override
     public Set<String> post(String clientID, String topic, String title, String content) throws RemoteException {
         logger.info("Received a post request from: " + clientID + "\tfor topic: " + topic + "\ttitle: " + title);
-        PostBean bean = new PostBean(clientID, topic, title, content);
-        try {
-            return dataManager.addData(bean);
-        } catch (Exception e) {
-            throw new RemoteException("Unable to create the post ", e);
-        }
+        return Collections.emptySet();
     }
 
     @Override
