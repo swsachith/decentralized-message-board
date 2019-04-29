@@ -61,7 +61,7 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public void send_ordered(Payload message, Set<String> recipients, MessageType messageType) {
         // add yourself to the recipient list
-        recipients.add(serverBindURI);
+        recipients.add(nodeID);
         // multicast the message to all the recipients
         int clock = this.clock.incrementAndGet();
         Message msg = new Message(message, nodeID, clock, false, messageType);

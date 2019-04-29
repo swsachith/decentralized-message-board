@@ -7,5 +7,6 @@ public enum ClientAPIMethodsEnum {
     DOWNVOTE,
     UPVOTE_REPLY,
     DOWNVOTE_REPLY,
+    GET_POST,
     GET_POSTS
 }

@@ -1,5 +1,6 @@
 package iu.e510.message.board.client;
 
+import iu.e510.message.board.db.model.DMBPost;
 import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
 
@@ -24,29 +25,38 @@ public class Main {
             if (tokens.length == 1 && tokens[0].equals("stop")) {
                 System.exit(0);
             }
-            else if (tokens.length < 3) {
+            else if (tokens.length < 1) {
                 //todo: add a comprehensive input format
                 System.out.println("Wrong input format.");
                 continue;
             }
             String method = tokens[0];
-            boolean result = false;
-            switch (method) {
-                case "post":
-                    result = clientService.post(tokens[1].trim(), tokens[2].trim(), tokens[3].trim());
-                    break;
-                case "reply":
-                    result = clientService.replyPost(tokens[1].trim(), Integer.parseInt(tokens[2].trim()), tokens[3].trim());
-                    break;
-                default:
-                    break;
-            }
-            if (result) {
-                System.out.println("The request was successfully executed");
-            } else {
-                System.out.println("Posting failed. Please try again");
-            }
+            processInput(clientService, tokens, method);
         }
         scanner.close();
+    }
+
+    private static void processInput(ClientService clientService, String[] tokens, String method) {
+        boolean successfull = false;
+        switch (method) {
+            case "post":
+                successfull = clientService.post(tokens[1].trim(), tokens[2].trim(), tokens[3].trim());
+                break;
+            case "reply":
+                successfull = clientService.replyPost(tokens[1].trim(), Integer.parseInt(tokens[2].trim()), tokens[3].trim());
+                break;
+            case "getposts":
+                List<DMBPost> posts = clientService.getPosts(tokens[1].trim());
+                for (DMBPost post : posts) {
+                    System.out.println(post);
+                }
+            default:
+                break;
+        }
+        if (successfull) {
+            System.out.println("The request was successfully executed");
+        } else {
+            System.out.println("Posting failed. Please try again");
+        }
     }
 }

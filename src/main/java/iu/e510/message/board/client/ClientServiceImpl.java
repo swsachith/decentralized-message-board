@@ -81,41 +81,6 @@ public class ClientServiceImpl implements ClientService {
         return handleClientRequestRecursively(ClientAPIMethodsEnum.POST, new String[]{clientID, topic, title, content});
     }
 
-    private boolean handleClientRequestRecursively(ClientAPIMethodsEnum methodName, Object[] parameters) {
-        Method method;
-        Set<String> results;
-        try {
-            method = getMethod(methodName);
-            // if the cache has a topic client mapping, use that. Else use the current clientAPI
-            String topic = (String) parameters[1];
-            ClientAPI topicClient = topicClientMap.get(topic);
-            if (topicClient != null) {
-                results = (Set<String>) method.invoke(topicClient, parameters);
-            } else {
-                results = (Set<String>) method.invoke(clientAPI, parameters);
-            }
-            if (results != null) {
-                if (results.isEmpty()) {
-                    return true;
-                } else {
-                    topicClientMap.remove(topic);
-                    // if the contacted node does not have that topic, retry with the retry list.
-                    ClientAPI topicClientAPI = getClientAPI(results);
-                    Set<String> newResult =
-                            (Set<String>) method.invoke(topicClientAPI, parameters);
-                    if (newResult.isEmpty()) {
-                        topicClientMap.put(topic, topicClientAPI);
-                        return true;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            logger.error("Error executing the method." + e.getMessage(), e);
-            return false;
-        }
-        return false;
-    }
-
     private Method getMethod(ClientAPIMethodsEnum methodEnum) throws NoSuchMethodException {
         Method method = null;
         switch (methodEnum) {
@@ -164,7 +129,30 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public List<DMBPost> getPosts(String topic) {
-        return null;
+        List<DMBPost> results = new ArrayList<>();
+        try {
+            // if the cache has a topic client mapping, use that. Else use the current clientAPI
+            ClientAPI topicClient = topicClientMap.get(topic);
+            if (topicClient != null) {
+                results = topicClient.getPosts(clientID, topic);
+            } else {
+                Set<String> nodes = clientAPI.getNodes(topic);
+                if (nodes != null) {
+                    topicClientMap.remove(topic);
+                    // if the contacted node does not have that topic, retry with the retry list.
+                    ClientAPI topicClientAPI = getClientAPI(nodes);
+                    results = topicClientAPI.getPosts(clientID, topic);
+                    if (!results.isEmpty()) {
+                        topicClientMap.put(topic, topicClientAPI);
+                        return results;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error executing the method." + e.getMessage(), e);
+            return results;
+        }
+        return results;
     }
 
     /**
@@ -188,5 +176,40 @@ public class ClientServiceImpl implements ClientService {
             }
         }
         throw new RuntimeException("Cannot connect to any of the super nodes.");
+    }
+
+    private boolean handleClientRequestRecursively(ClientAPIMethodsEnum methodName, Object[] parameters) {
+        Method method;
+        Set<String> results;
+        try {
+            method = getMethod(methodName);
+            // if the cache has a topic client mapping, use that. Else use the current clientAPI
+            String topic = (String) parameters[1];
+            ClientAPI topicClient = topicClientMap.get(topic);
+            if (topicClient != null) {
+                results = (Set<String>) method.invoke(topicClient, parameters);
+            } else {
+                results = (Set<String>) method.invoke(clientAPI, parameters);
+            }
+            if (results != null) {
+                if (results.isEmpty()) {
+                    return true;
+                } else {
+                    topicClientMap.remove(topic);
+                    // if the contacted node does not have that topic, retry with the retry list.
+                    ClientAPI topicClientAPI = getClientAPI(results);
+                    Set<String> newResult =
+                            (Set<String>) method.invoke(topicClientAPI, parameters);
+                    if (newResult.isEmpty()) {
+                        topicClientMap.put(topic, topicClientAPI);
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error executing the method." + e.getMessage(), e);
+            return false;
+        }
+        return false;
     }
 }
