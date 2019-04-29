@@ -16,13 +16,13 @@ public interface DataManager {
 
     Set<String> getAllTopics();
 
-    void setConsistency(boolean consistency);
+    void setConsistent(boolean consistency);
 
     String getNodeId();
 
     Set<String> getNodeIdsForTopic(String topic);
 
-    boolean getConsistency();
+    boolean isConsistent();
 
     /**
      * Returns the topics to transfer and keep.

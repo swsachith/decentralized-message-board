@@ -1,5 +1,7 @@
 package iu.e510.message.board.cluster.data.beans;
 
+import iu.e510.message.board.db.DMBDatabase;
+
 public class PostVoteBean extends BaseBean {
     private boolean vote;
     private int postID;
@@ -10,11 +12,12 @@ public class PostVoteBean extends BaseBean {
         this.postID = postID;
     }
 
-    public boolean isVote() {
-        return vote;
-    }
-
-    public int getPostID() {
-        return postID;
+    @Override
+    public void processBean(DMBDatabase database) {
+        if (vote){
+            database.upVotePost(postID, getClientID());
+        } else {
+            database.downVotePost(postID, getClientID());
+        }
     }
 }

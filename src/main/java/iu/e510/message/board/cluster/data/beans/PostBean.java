@@ -1,5 +1,7 @@
 package iu.e510.message.board.cluster.data.beans;
 
+import iu.e510.message.board.db.DMBDatabase;
+
 public class PostBean extends BaseBean {
     private String  title;
     private String content;
@@ -10,11 +12,8 @@ public class PostBean extends BaseBean {
         this.content = content;
     }
 
-    public String getTitle() {
-        return title;
-    }
-
-    public String getContent() {
-        return content;
+    @Override
+    public void processBean(DMBDatabase database) {
+        database.addPostData(title, getTopic(), getClientID(), content);
     }
 }

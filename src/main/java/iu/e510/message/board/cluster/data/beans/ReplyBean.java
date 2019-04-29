@@ -1,9 +1,10 @@
 package iu.e510.message.board.cluster.data.beans;
 
+import iu.e510.message.board.db.DMBDatabase;
+
 public class ReplyBean extends BaseBean {
     private int postID;
     private String content;
-
 
     public ReplyBean(String clientID, String topic, int postID, String content) {
         super(clientID, topic);
@@ -11,11 +12,9 @@ public class ReplyBean extends BaseBean {
         this.content = content;
     }
 
-    public int getPostID() {
-        return postID;
-    }
 
-    public String getContent() {
-        return content;
+    @Override
+    public void processBean(DMBDatabase database) {
+        database.addReplyData(postID, getClientID(), content);
     }
 }

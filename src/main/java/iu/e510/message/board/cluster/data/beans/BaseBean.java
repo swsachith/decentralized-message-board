@@ -1,8 +1,10 @@
 package iu.e510.message.board.cluster.data.beans;
 
+import iu.e510.message.board.db.DMBDatabase;
+
 import java.io.Serializable;
 
-public class BaseBean implements Serializable {
+public abstract class BaseBean implements Serializable {
 
     private static final long serialVersionUID = -6432207221940427864L;
 
@@ -21,4 +23,6 @@ public class BaseBean implements Serializable {
     public String getTopic() {
         return topic;
     }
+
+    public abstract void processBean(DMBDatabase database);
 }

@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeromq.ZContext;
 
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -117,20 +116,50 @@ public class MessageServiceImpl implements MessageService {
         return "tcp://" + id;
     }
 
+    private void nonBlockingMessageProcessing(Message message) {
+        logger.debug("Saving message for async process: " + message.toString());
+        try {
+            superNodeMsgQueue.put(message);
+        } catch (InterruptedException e) {
+            logger.error("Unable to access queue ", e);
+            throw new RuntimeException("Unable to access queue ", e);
+        }
+    }
+
+    private Message blockingMessageProcessing(Message message) {
+        logger.debug("Processing message: " + message.toString());
+
+        if (message.getMessageType() == MessageType.DATA_REQUEST) {
+            String topic = (String) message.getPayload().getContent();
+            logger.debug("Data request received for topic: " + topic);
+
+            byte[] data = database.getPostsDataByTopicByteArray(topic);
+
+            return new Message(new Payload<>(nodeID, data), nodeID, clock.get(), true,
+                    MessageType.DATA_RESPONSE);
+        } else {
+            throw new RuntimeException("Unknown message type for sync process: " + message);
+        }
+    }
+
+
+
+
     protected class DeliveryHandlerImpl implements DeliveryHandler {
 
         @Override
         public void deliverReleaseMessage(Message message) {
-            Message releaseMessage = new Message(new Payload<>("Release"), nodeID,
+            Message releaseMessage = new Message(message.getPayload(), nodeID,
                     clock.incrementAndGet(), false, message.getMessageType());
             releaseMessage.setRelease(message.getId());
 
             Set<String> recipients = message.getRecipients();
 
-            //todo: add delivering into data manager
+            // Add delivering into data manager by putting the message into the queue
             // deliver the message to yourself
             logger.info("[pid:" + nodeID + "][clock:" + clock.get() + "] Delivering message: "
                     + message.getId() + " to myself");
+            nonBlockingMessageProcessing(message);
 
             // multicast the message to all the other recipients
             for (String recipient : recipients) {
@@ -141,6 +170,7 @@ public class MessageServiceImpl implements MessageService {
             }
         }
     }
+
 
     protected class MessageHandlerImpl implements MessageHandler {
         private Logger logger = LoggerFactory.getLogger(MessageHandlerImpl.class);
@@ -162,7 +192,8 @@ public class MessageServiceImpl implements MessageService {
                         " from: " + message.getNodeID());
                 return null;
             }
-            //todo: deliver messages here
+
+            // Deliver messages here
             // handling the unicast vs multicast
             boolean unicast = message.isUnicast();
             if (unicast) {
@@ -178,7 +209,7 @@ public class MessageServiceImpl implements MessageService {
 
             MessageType type = message.getMessageType();
 
-            if (type.equals(MessageType.TRANSFER) || type.equals(MessageType.SYNC)) {
+            if (type.equals(MessageType.TRANSFER) || type.equals(MessageType.SYNC )) {
                 nonBlockingMessageProcessing(message);
                 return null;
             } else {
@@ -213,30 +244,5 @@ public class MessageServiceImpl implements MessageService {
             return ack;
         }
 
-        private void nonBlockingMessageProcessing(Message message) {
-            logger.debug("Saving message for async process: " + message.toString());
-            try {
-                superNodeMsgQueue.put(message);
-            } catch (InterruptedException e) {
-                logger.error("Unable to access queue ", e);
-                throw new RuntimeException("Unable to access queue ", e);
-            }
-        }
-
-        private Message blockingMessageProcessing(Message message) {
-            logger.debug("Processing message: " + message.toString());
-
-            if (message.getMessageType() == MessageType.DATA_REQUEST) {
-                String topic = (String) message.getPayload().getContent();
-                logger.debug("Data request received for topic: " + topic);
-
-                byte[] data = database.getPostsDataByTopicByteArray(topic);
-
-                return new Message(new Payload<>(nodeID, data), nodeID, clock.get(), true,
-                        MessageType.DATA_RESPONSE);
-            } else {
-                throw new RuntimeException("Unknown message type for sync process: " + message);
-            }
-        }
     }
 }

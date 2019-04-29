@@ -38,7 +38,7 @@ public class DataManagerImpl implements DataManager {
     private BlockingQueue<Message> superNodeMsgQueue;
     private MesssageExecutor messsageExecutor;
 
-    private AtomicBoolean consistency;
+    private AtomicBoolean consistent;
 
     private ClusterManager clusterManager;
 
@@ -52,7 +52,7 @@ public class DataManagerImpl implements DataManager {
         this.myNodeID = nodeID;
         this.zkMyTopicStore = config.getConfig(Constants.DATA_LOCATION) + "/" + myNodeID;
 
-        this.consistency = new AtomicBoolean(true);
+        this.consistent = new AtomicBoolean(true);
         this.messageService = messageService;
         this.superNodeMsgQueue = superNodeMsgQueue;
         this.clusterManager = clusterManager;
@@ -148,8 +148,8 @@ public class DataManagerImpl implements DataManager {
     }
 
     @Override
-    public void setConsistency(boolean consistency) {
-        this.consistency.set(consistency);
+    public void setConsistent(boolean consistency) {
+        this.consistent.set(consistency);
     }
 
     @Override
@@ -163,8 +163,8 @@ public class DataManagerImpl implements DataManager {
     }
 
     @Override
-    public boolean getConsistency() {
-        return this.consistency.get();
+    public boolean isConsistent() {
+        return this.consistent.get();
     }
 
     @Override
@@ -184,8 +184,7 @@ public class DataManagerImpl implements DataManager {
     public Set<String> addData(BaseBean dataBean) throws Exception {
         Set<String> nodes = getNodeIdsForTopic(dataBean.getTopic());
 
-        if (nodes.contains(myNodeID)){
-            // multicast
+        if (nodes.contains(myNodeID) && isConsistent()){
             messageService.send_ordered(new Payload<>(dataBean), nodes, MessageType.CLIENT_DATA);
 
             return Collections.emptySet();
@@ -193,7 +192,6 @@ public class DataManagerImpl implements DataManager {
             return nodes;
         }
     }
-
 
 
 
@@ -210,7 +208,7 @@ public class DataManagerImpl implements DataManager {
                 try {
                     Message message = superNodeMsgQueue.take();
                     logger.info("Server is inconsistent");
-                    setConsistency(false);
+                    setConsistent(false);
 
                     if (message.getMessageType() == MessageType.SYNC) {
                         logger.info("Processing SYNC msg: " + message);
@@ -233,11 +231,19 @@ public class DataManagerImpl implements DataManager {
                         //  relevant data to the destination node
 
 
-                    } else {
+                    } else if (message.getMessageType() == MessageType.CLIENT_DATA){
+                        logger.info("Client data received!");
+
+                        Payload<BaseBean> payload = message.getPayload();
+
+                        // process payload data bean
+                        payload.getContent().processBean(database);
+                    }
+                    else {
                         throw new RuntimeException("Unknown message type: " + message);
                     }
 
-                    setConsistency(true);
+                    setConsistent(true);
                     logger.info("Server consistent again!");
 
                 } catch (InterruptedException e) {
