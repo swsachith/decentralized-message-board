@@ -12,6 +12,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 public class ClientServiceImpl implements ClientService {
     private static Logger logger = LoggerFactory.getLogger(ClientServiceImpl.class);
@@ -33,51 +34,6 @@ public class ClientServiceImpl implements ClientService {
         } catch (RemoteException e) {
             logger.error("Error occurred while getting the registry!");
         }
-    }
-
-    @Override
-    public boolean post(String topic, String title, String content) {
-        try {
-            return clientAPI.post(clientID, topic, title, content);
-        } catch (RemoteException e) {
-           serverConnectionRefresh();
-        }
-        return true;
-    }
-
-    @Override
-    public void upvotePost(String topic, int postID) {
-
-    }
-
-    @Override
-    public void downvotePost(String topic, int postID) {
-
-    }
-
-    @Override
-    public void replyPost(String topic, int postID, String content) {
-
-    }
-
-    @Override
-    public void upvoteReply(String topic, int postID, int replyID) {
-
-    }
-
-    @Override
-    public void downvoteReply(String topic, int postID, int replyID) {
-
-    }
-
-    @Override
-    public DMBPost getPost(String topic, int postID) {
-        return null;
-    }
-
-    @Override
-    public List<DMBPost> getPosts(String topic) {
-        return null;
     }
 
     /**
@@ -114,5 +70,45 @@ public class ClientServiceImpl implements ClientService {
     private List<String> getSuperNodeList() {
         String superNodes = this.config.getConfig(Constants.SUPER_NODE_LIST);
         return Arrays.asList(superNodes.split(","));
+    }
+
+    @Override
+    public Set<String> post(String topic, String title, String content) {
+        return null;
+    }
+
+    @Override
+    public Set<String> upvotePost(String topic, int postID) {
+        return null;
+    }
+
+    @Override
+    public Set<String> downvotePost(String topic, int postID) {
+        return null;
+    }
+
+    @Override
+    public Set<String> replyPost(String topic, int postID, String content) {
+        return null;
+    }
+
+    @Override
+    public Set<String> upvoteReply(String topic, int postID, int replyID) {
+        return null;
+    }
+
+    @Override
+    public Set<String> downvoteReply(String topic, int postID, int replyID) {
+        return null;
+    }
+
+    @Override
+    public DMBPost getPost(String topic, int postID) {
+        return null;
+    }
+
+    @Override
+    public List<DMBPost> getPosts(String topic) {
+        return null;
     }
 }
