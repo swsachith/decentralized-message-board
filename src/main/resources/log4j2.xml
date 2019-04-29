@@ -6,8 +6,12 @@
         </Console>
     </Appenders>
     <Loggers>
+        <Logger name="iu.e510.message.board" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
         <Root level="info">
             <AppenderRef ref="Console"/>
         </Root>
     </Loggers>
+
 </Configuration>

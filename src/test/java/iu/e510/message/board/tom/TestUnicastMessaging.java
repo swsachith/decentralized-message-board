@@ -2,6 +2,7 @@ package iu.e510.message.board.tom;
 
 import iu.e510.message.board.tom.common.LamportClock;
 import iu.e510.message.board.tom.common.MessageType;
+import iu.e510.message.board.tom.common.Payload;
 import org.testng.Assert;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
@@ -16,7 +17,7 @@ public class TestUnicastMessaging {
     @BeforeSuite
     public static void setup() {
         clock = LamportClock.getClock();
-        messageService = new MessageServiceImpl(unicastServerBindURL, unicastServerBindURL);
+        messageService = new MessageServiceImpl(unicastServerBindURL, unicastServerBindURL, null);
     }
 
     @Test
@@ -24,10 +25,11 @@ public class TestUnicastMessaging {
         Assert.assertEquals(0, clock.get());
     }
 
-    @Test (dependsOnMethods = { "testInit" })
+    @Test(dependsOnMethods = {"testInit"})
     public void testMessageSent() {
         clock.set(0);
-        messageService.send_unordered("hello world", unicastServerBindURL, MessageType.SYNC);
+        messageService.send_unordered(new Payload<>("hello world"), unicastServerBindURL,
+                MessageType.SYNC);
         int newClock = clock.get();
         Assert.assertEquals(newClock, 2);
     }

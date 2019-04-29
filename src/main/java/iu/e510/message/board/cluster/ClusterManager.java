@@ -4,6 +4,7 @@ import iu.e510.message.board.cluster.zk.ZKManager;
 import iu.e510.message.board.cluster.zk.ZKManagerImpl;
 import iu.e510.message.board.tom.MessageService;
 import iu.e510.message.board.tom.common.MessageType;
+import iu.e510.message.board.tom.common.Payload;
 import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
 import org.apache.commons.lang3.SerializationUtils;
@@ -60,6 +61,7 @@ public class ClusterManager implements LeaderLatchListener {
      * Create your ephemeral file at the /cluster location
      * Update your ring
      * Add a watch for the /cluster to get notified of node changes
+     *
      * @throws Exception
      */
     private void initialize() throws Exception {
@@ -86,6 +88,7 @@ public class ClusterManager implements LeaderLatchListener {
 
     /**
      * Creates the Hash Ring with the current cluster configs.
+     *
      * @throws Exception
      */
     private void initRing() throws Exception {
@@ -138,6 +141,7 @@ public class ClusterManager implements LeaderLatchListener {
 
     /**
      * Returns the ip of the node in the ring for the given ip
+     *
      * @param ip
      * @return
      */
@@ -152,6 +156,7 @@ public class ClusterManager implements LeaderLatchListener {
 
     /**
      * Get bucket nodes list for a given topic. Returns all the dataReplicas.
+     *
      * @param topic
      * @return
      */
@@ -170,6 +175,7 @@ public class ClusterManager implements LeaderLatchListener {
 
     /**
      * Returns a single bucket to which the value belongs to.
+     *
      * @param value
      * @return
      */
@@ -184,6 +190,7 @@ public class ClusterManager implements LeaderLatchListener {
 
     /**
      * Stops the cluster manager
+     *
      * @throws InterruptedException
      * @throws IOException
      */
@@ -229,6 +236,7 @@ public class ClusterManager implements LeaderLatchListener {
      * When a node goes down, reads the topics of that node, and create a inverted index of
      * new ip -> topic combination.
      * Then send out the message to all the ips with the list of topics.
+     *
      * @param nodeID
      * @throws Exception
      */
@@ -239,7 +247,7 @@ public class ClusterManager implements LeaderLatchListener {
         // For each topic, create an inverted index from ip -> topics
         for (String topic : lostNodeTopics) {
             Set<String> ips = getHashingNodes(topic);
-            for (String ip: ips) {
+            for (String ip : ips) {
                 Set<String> topicsOfIP = invertedIndex.get(ip);
                 if (topicsOfIP == null) {
                     topicsOfIP = new HashSet<>();
@@ -249,8 +257,8 @@ public class ClusterManager implements LeaderLatchListener {
             }
         }
         for (String topicNodeID : invertedIndex.keySet()) {
-            messageService.send_unordered(invertedIndex.get(topicNodeID).toString(),
-                    messageService.getUrl(topicNodeID), MessageType.SYNC);
+            Payload<Set<String>> syncReq = new Payload<>(nodeID, invertedIndex.get(topicNodeID));
+            messageService.send_unordered(syncReq, messageService.getUrl(topicNodeID), MessageType.SYNC);
         }
         logger.info("New redistribution topic map: " + invertedIndex.toString());
     }
@@ -259,13 +267,14 @@ public class ClusterManager implements LeaderLatchListener {
         logger.info("Node added. Hence redistributing data");
         String hashingNode = getPreviousNode(eventNodeID);
         logger.info(eventNodeID + " Would talk to " + hashingNode + " to get the required topics");
-        messageService.send_unordered("Talk to: " + hashingNode, messageService.getUrl(eventNodeID),
-                MessageType.TRANSFER);
-        logger.info("Ring: "+ hashRing.getRing().toString());
+        messageService.send_unordered(new Payload<>(hashingNode),
+                messageService.getUrl(eventNodeID), MessageType.TRANSFER);
+        logger.info("Ring: " + hashRing.getRing().toString());
     }
 
     /**
      * Return lost node topics and delete that data node.
+     *
      * @param nodePath
      * @return
      * @throws Exception
@@ -276,5 +285,34 @@ public class ClusterManager implements LeaderLatchListener {
         logger.info("Deleted data node for the lost node: " +
                 nodePath.substring(config.getConfig(Constants.DATA_LOCATION).length() + 1));
         return topics;
+    }
+
+    /**
+     * Returns the topics the old node and the new node should have.
+     * This is used when transferring the data from one node to the other.
+     *
+     * @param oldNode
+     * @param newNode
+     * @param topicList
+     * @return
+     */
+    public Map<String, Set<String>> getTransferTopics(String oldNode, String newNode, Set<String> topicList) {
+        Set<String> oldNodeTopics = new HashSet<>();
+        Set<String> newNodeTopics = new HashSet<>();
+        for (String topic : topicList) {
+            Set<String> hashingNodes = getHashingNodes(topic);
+            for (String node : hashingNodes) {
+                if (node.equals(oldNode)) {
+                    oldNodeTopics.add(topic);
+                }
+                if (node.equals(newNode)) {
+                    newNodeTopics.add(topic);
+                }
+            }
+        }
+        Map<String, Set<String>> resultMap = new HashMap<>();
+        resultMap.put("newNode", newNodeTopics);
+        resultMap.put("oldNode", oldNodeTopics);
+        return resultMap;
     }
 }
