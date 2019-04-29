@@ -7,6 +7,7 @@ import iu.e510.message.board.util.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Method;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -77,14 +78,21 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public boolean post(String topic, String title, String content) {
         topic = topic.toLowerCase().trim();
+        return handleClientRequestRecursively(ClientAPIMethodsEnum.POST, new String[]{clientID, topic, title, content});
+    }
+
+    private boolean handleClientRequestRecursively(ClientAPIMethodsEnum methodName, Object[] parameters) {
+        Method method;
         Set<String> results;
         try {
+            method = getMethod(methodName);
             // if the cache has a topic client mapping, use that. Else use the current clientAPI
+            String topic = (String) parameters[1];
             ClientAPI topicClient = topicClientMap.get(topic);
             if (topicClient != null) {
-                results = topicClient.post(clientID, topic, title, content);
+                results = (Set<String>) method.invoke(topicClient, parameters);
             } else {
-                results = clientAPI.post(clientID, topic, title, content);
+                results = (Set<String>) method.invoke(clientAPI, parameters);
             }
             if (results != null) {
                 if (results.isEmpty()) {
@@ -92,18 +100,34 @@ public class ClientServiceImpl implements ClientService {
                 } else {
                     // if the contacted node does not have that topic, retry with the retry list.
                     ClientAPI topicClientAPI = getClientAPI(results);
-                    Set<String> newResult = topicClientAPI.post(clientID, topic, title, content);
+                    Set<String> newResult =
+                            (Set<String>) method.invoke(topicClientAPI, parameters);
                     if (newResult.isEmpty()) {
                         topicClientMap.put(topic, topicClientAPI);
                         return true;
                     }
                 }
             }
-        } catch (RemoteException e) {
+        } catch (Exception e) {
             logger.error("Error executing the method." + e.getMessage(), e);
             return false;
         }
         return false;
+    }
+
+    private Method getMethod(ClientAPIMethodsEnum methodEnum) throws NoSuchMethodException {
+        Method method = null;
+        switch (methodEnum) {
+            case POST:
+                method = ClientAPI.class.getMethod("post", String.class, String.class, String.class, String.class);
+                break;
+            case REPLY:
+                method = ClientAPI.class.getMethod("replyPost", String.class, String.class, int.class, String.class);
+                break;
+            default:
+                break;
+        }
+        return method;
     }
 
     @Override
@@ -119,33 +143,7 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public boolean replyPost(String topic, int postID, String content) {
         topic = topic.toLowerCase().trim();
-        Set<String> results;
-        try {
-            // if the cache has a topic client mapping, use that. Else use the current clientAPI
-            ClientAPI topicClient = topicClientMap.get(topic);
-            if (topicClient != null) {
-                results = topicClient.replyPost(clientID, topic, postID, content);
-            } else {
-                results = clientAPI.replyPost(clientID, topic, postID, content);
-            }
-            if (results != null) {
-                if (results.isEmpty()) {
-                    return true;
-                } else {
-                    // if the contacted node does not have that topic, retry with the retry list.
-                    ClientAPI topicClientAPI = getClientAPI(results);
-                    Set<String> newResult = topicClientAPI.replyPost(clientID, topic, postID, content);
-                    if (newResult.isEmpty()) {
-                        topicClientMap.put(topic, topicClientAPI);
-                        return true;
-                    }
-                }
-            }
-        } catch (RemoteException e) {
-            logger.error("Error executing the method." + e.getMessage(), e);
-            return false;
-        }
-        return false;
+        return handleClientRequestRecursively(ClientAPIMethodsEnum.REPLY, new Object[]{clientID, topic, postID, content});
     }
 
     @Override
