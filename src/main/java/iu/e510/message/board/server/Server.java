@@ -42,10 +42,11 @@ public class Server {
 
         this.database = new DMBDatabaseImpl(nodeID);
         this.sharedMulticastQueue = new ConcurrentSkipListSet<>();
-        this.messageService = new MessageServiceImpl("tcp://" + id, id, sharedMulticastQueue);
+        this.messageService = new MessageServiceImpl("tcp://" + id, id,
+                sharedMulticastQueue, superNodeMsgQueue);
         this.clusterManager = new ClusterManager(id, messageService);
-        this.dataManager = new DataManagerImpl(id, messageService, superNodeMsgQueue, clusterManager, database,
-                sharedMulticastQueue);
+        this.dataManager = new DataManagerImpl(id, messageService, superNodeMsgQueue,
+                clusterManager, database, sharedMulticastQueue);
 
 
         // Binding the RMI client stubs

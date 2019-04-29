@@ -91,17 +91,14 @@ public class DataManagerImpl implements DataManager {
     }
 
     @Override
-    public void addData(String path, PayloadType type, byte[] payload) throws Exception {
+    public void addTopicData(String path) throws Exception {
         try {
             writeLock.lock();
             // write to ZK only if the topic is not already recorded
-            if (!myTopics.contains(path)) {
+            if (!hasData(path)) {
                 myTopics.add(path);
                 zkManager.set(zkMyTopicStore, SerializationUtils.serialize(myTopics));
             }
-
-            // store data here
-            //todo: save data in the db here.
 
         } finally {
             writeLock.unlock();
@@ -122,8 +119,8 @@ public class DataManagerImpl implements DataManager {
         for (String node : nodes) {
             logger.debug("Talking to " + node);
 
-            Message response = messageService.send_unordered(new Payload<>(topic), "tcp://" + node,
-                    MessageType.DATA_REQUEST);
+            Message response = messageService.send_unordered(new Payload<>(topic),
+                    messageService.getUrl(node), MessageType.DATA_REQUEST);
 
             if (response != null) return (byte[]) response.getPayload().getContent();
         }
@@ -219,6 +216,7 @@ public class DataManagerImpl implements DataManager {
                     if (message.getMessageType() == MessageType.SYNC) {
                         logger.info("Processing SYNC msg: " + message);
 
+                        // topics set which needs to be grabbed from the peers
                         Set<String> topics = (Set<String>) message.getPayload().getContent();
 
                         for (String topic : topics) {
@@ -228,22 +226,45 @@ public class DataManagerImpl implements DataManager {
                                 logger.info("Requesting data from the cluster for: " + topic);
                                 byte[] data = getData(topic);
                                 logger.debug("Received data: " + Arrays.toString(data));
+
+                                // add data to topics set and zk
+                                addTopicData(topic);
                                 database.addPostsDataFromByteArray(data);
                             }
                         }
                     } else if (message.getMessageType() == MessageType.TRANSFER) {
                         logger.info("Processing TRANSFER msg: " + message);
-                        // todo: implement this --> take the topics from the message and send the
-                        //  relevant data to the destination node
+
+                        // take the topics from the message
+                        String nodeToTalk = (String) message.getPayload().getContent();
+                        logger.info("Master asks me to talk to: " + nodeToTalk + " and transfer " +
+                                "the relevant topics");
+
+                        Message response = messageService.send_unordered(new Payload<>(myNodeID),
+                                messageService.getUrl(nodeToTalk), MessageType.TRANSFER_TOPICS);
 
 
-                    } else if (message.getMessageType() == MessageType.CLIENT_DATA){
+                    } else if (message.getMessageType() == MessageType.DELETE_TOPICS) {
+                        logger.info("Delete topics received!");
+                        Set<String> delTopics = (Set<String>) message.getPayload().getContent();
+
+                        for (String topic : delTopics) {
+                            deleteData(topic);
+                            database.removePostsDataByTopic(topic);
+                        }
+
+
+                    } else if (message.getMessageType() == MessageType.CLIENT_DATA) {
                         logger.info("Client data received!");
 
                         Payload<BaseBean> payload = message.getPayload();
+                        BaseBean bean = payload.getContent();
 
-                        // process payload data bean
-                        payload.getContent().processBean(database);
+                        // add data to topics set and zk
+                        addTopicData(bean.getTopic());
+
+                        // process payload data bean and store the data in the db
+                        bean.processBean(database);
                     }
                     else {
                         throw new RuntimeException("Unknown message type: " + message);
@@ -254,6 +275,8 @@ public class DataManagerImpl implements DataManager {
 
                 } catch (InterruptedException e) {
                     logger.error("Unable to access the queue: ", e);
+                } catch (Exception e) {
+                    throw new RuntimeException("Exception occurred ", e);
                 }
             }
         }
@@ -358,6 +381,23 @@ public class DataManagerImpl implements DataManager {
 
                 return new Message(new Payload<>(nodeID, data), nodeID, clock.get(), true,
                         MessageType.DATA_RESPONSE);
+            } else if (message.getMessageType() == MessageType.TRANSFER_TOPICS) {
+                String newNodeId = (String) message.getPayload().getContent();
+
+                Map<String, Set<String>> transferTopics = getTransferTopics(newNodeId);
+
+                Set<String> delete = transferTopics.get("delete");
+                try {
+                    superNodeMsgQueue.put(new Message(new Payload<>(delete), myNodeID, clock.get(),
+                            true, MessageType.DELETE_TOPICS));
+                } catch (InterruptedException e) {
+                    throw new RuntimeException("Unable to access the queue", e);
+                }
+
+                Set<String> transfer = transferTopics.get("transfer");
+
+                return new Message(new Payload<>(transfer), myNodeID, clock.get(),
+                        true, MessageType.SYNC);
             } else {
                 throw new RuntimeException("Unknown message type for sync process: " + message);
             }

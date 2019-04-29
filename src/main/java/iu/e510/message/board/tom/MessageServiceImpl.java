@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.zeromq.ZContext;
 
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public class MessageServiceImpl implements MessageService {
@@ -29,12 +30,19 @@ public class MessageServiceImpl implements MessageService {
     private Config config;
     private ZContext context;
 
-    public MessageServiceImpl(String serverBindURI, String nodeID, ConcurrentSkipListSet<Message> messageQueue) {
+    private BlockingQueue<Message> superNodeMsgQueue;
+
+
+    public MessageServiceImpl(String serverBindURI, String nodeID,
+                              ConcurrentSkipListSet<Message> messageQueue,
+                              BlockingQueue<Message> superNodeMsgQueue) {
         config = new Config();
         clock = LamportClock.getClock();
         this.serverBindURI = serverBindURI;
         this.nodeID = nodeID;
         this.messageQueue = messageQueue;
+        this.superNodeMsgQueue = superNodeMsgQueue;
+
         this.context = new ZContext();
         this.messageSender = new MessageSender(context, Integer.parseInt(config.getConfig(Constants.SEND_TIMEOUT)));
         this.deliveryHandler = new DeliveryHandlerImpl();
@@ -59,7 +67,8 @@ public class MessageServiceImpl implements MessageService {
         Message msg = new Message(message, nodeID, clock, false, messageType);
         msg.setRecipients(recipients);
         for (String recipient : recipients) {
-            Message response = messageSender.sendMessage(msg, recipient, this.clock.get());
+            Message response = messageSender.sendMessage(msg, getUrl(recipient),
+                    this.clock.get());
             if (response != null) {
                 messageHandler.processMessage(response);
             } else {
@@ -113,16 +122,23 @@ public class MessageServiceImpl implements MessageService {
 
         @Override
         public void deliverReleaseMessage(Message message) {
-            Message releaseMessage = new Message(new Payload<>("Release"), nodeID,
+            Message releaseMessage = new Message(message.getPayload(), nodeID,
                     clock.incrementAndGet(), false, message.getMessageType());
             releaseMessage.setRelease(message.getId());
 
             Set<String> recipients = message.getRecipients();
 
-            //todo: add delivering into data manager
+            // Add delivering into data manager by putting the message into the queue
             // deliver the message to yourself
             logger.info("[pid:" + nodeID + "][clock:" + clock.get() + "] Delivering message: "
                     + message.getId() + " to myself");
+            logger.debug("Saving message for async process: " + message.toString());
+            try {
+                superNodeMsgQueue.put(message);
+            } catch (InterruptedException e) {
+                logger.error("Unable to access queue ", e);
+                throw new RuntimeException("Unable to access queue ", e);
+            }
 
             // multicast the message to all the other recipients
             for (String recipient : recipients) {

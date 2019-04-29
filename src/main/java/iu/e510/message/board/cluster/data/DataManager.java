@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 public interface DataManager {
-    void addData(String path, PayloadType type, byte[] payload) throws Exception;
+    void addTopicData(String path) throws Exception;
 
     byte[] getData(String path);
 

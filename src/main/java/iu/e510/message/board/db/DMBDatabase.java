@@ -9,6 +9,7 @@ public interface DMBDatabase {
     byte[] getPostsDataByteArray();
     void addPostsDataFromByteArray(byte[] postByteArray);
     byte[] getPostsDataByTopicByteArray(String pTopic);
+    void removePostsDataByTopic(String topic);
 
     byte [] getRepliesByteArray();
     void addRepliesFromByteArray(byte[] repliesByteArray);

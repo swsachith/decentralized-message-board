@@ -178,6 +178,11 @@ public class DMBDatabaseImpl implements DMBDatabase {
         return null;
     }
 
+    @Override
+    public void removePostsDataByTopic(String topic) {
+        // todo: implement this!
+    }
+
     private byte[] getPostBytesFromRS(ResultSet resultSet) throws SQLException, JSONException {
         JSONArray dmbPostsJsonArray = new JSONArray();
         while (resultSet.next()) {

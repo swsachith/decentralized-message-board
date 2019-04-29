@@ -14,9 +14,9 @@ public class TestDataManager extends BaseZKTest {
     @Test
     public void setData() throws Exception {
         DataManagerImpl superNodeDataManager = new DataManagerImpl(ip, null, null,
-                null, null);
-        superNodeDataManager.addData("bloomington", null, "hi".getBytes());
-        superNodeDataManager.addData("iu", null, "hi".getBytes());
+                null, null, null);
+        superNodeDataManager.addTopicData("bloomington");
+        superNodeDataManager.addTopicData("iu");
         HashSet<String> dataManagerAllTopics = superNodeDataManager.getAllTopics();
 
         String dataStore = config.getConfig(Constants.DATA_LOCATION) + "/" + ip;
