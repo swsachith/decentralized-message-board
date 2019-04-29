@@ -98,6 +98,7 @@ public class ClientServiceImpl implements ClientService {
                 if (results.isEmpty()) {
                     return true;
                 } else {
+                    topicClientMap.remove(topic);
                     // if the contacted node does not have that topic, retry with the retry list.
                     ClientAPI topicClientAPI = getClientAPI(results);
                     Set<String> newResult =
@@ -167,14 +168,16 @@ public class ClientServiceImpl implements ClientService {
     }
 
     /**
-     * Returns a reference to a working client in the hash ring for a given client list.
+     * Returns a reference to a random working super node in the hash ring for a given client list.
      *
-     * @param clientIDList
+     * @param clientIDSet
      * @return
      */
-    private ClientAPI getClientAPI(Set<String> clientIDList) {
-        //todo: return a random api
+    private ClientAPI getClientAPI(Set<String> clientIDSet) {
         ClientAPI clientAPI;
+        // shuffling to get a random super node
+        List<String> clientIDList = new ArrayList<>(clientIDSet);
+        Collections.shuffle(clientIDList, new Random());
         for (String clientID : clientIDList) {
             logger.info("Trying to connect to: " + clientID);
             try {
@@ -184,6 +187,6 @@ public class ClientServiceImpl implements ClientService {
                 logger.info(clientID + " cannot be reached. Hence trying the next node");
             }
         }
-        throw new RuntimeException("Cannot connect to any of the clients.");
+        throw new RuntimeException("Cannot connect to any of the super nodes.");
     }
 }
