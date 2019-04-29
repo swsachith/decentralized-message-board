@@ -29,12 +29,12 @@ public class MessageServiceImpl implements MessageService {
     private Config config;
     private ZContext context;
 
-    public MessageServiceImpl(String serverBindURI, String nodeID) {
+    public MessageServiceImpl(String serverBindURI, String nodeID, ConcurrentSkipListSet<Message> messageQueue) {
         config = new Config();
         clock = LamportClock.getClock();
         this.serverBindURI = serverBindURI;
         this.nodeID = nodeID;
-        this.messageQueue = new ConcurrentSkipListSet<>();
+        this.messageQueue = messageQueue;
         this.context = new ZContext();
         this.messageSender = new MessageSender(context, Integer.parseInt(config.getConfig(Constants.SEND_TIMEOUT)));
         this.deliveryHandler = new DeliveryHandlerImpl();
@@ -46,7 +46,6 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public void init(MessageHandler messageHandler) {
         this.messageHandler = messageHandler;
-        this.messageHandler.setMessageQueue(this.messageQueue);
         this.messageReceiver = new MessageReceiver(context, this.serverBindURI, this.messageHandler);
         this.messageReceiver.start();
     }

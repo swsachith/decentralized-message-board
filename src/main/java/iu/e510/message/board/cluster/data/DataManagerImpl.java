@@ -49,7 +49,8 @@ public class DataManagerImpl implements DataManager {
 
     public DataManagerImpl(String nodeID, MessageService messageService,
                            BlockingQueue<Message> superNodeMsgQueue,
-                           ClusterManager clusterManager, DMBDatabase database) throws Exception {
+                           ClusterManager clusterManager, DMBDatabase database,
+                           ConcurrentSkipListSet<Message> messageQueue) throws Exception {
         logger.info("Initializing the Data Manager!");
         this.config = new Config();
         this.myNodeID = nodeID;
@@ -68,7 +69,7 @@ public class DataManagerImpl implements DataManager {
         this.writeLock = this.lock.writeLock();
         this.myTopics = new HashSet<>();
         this.zkManager = new ZKManagerImpl();
-        MessageHandler messageHandler = new MessageHandlerImpl(nodeID);
+        MessageHandler messageHandler = new MessageHandlerImpl(nodeID, messageQueue);
         this.messageService.init(messageHandler);
         // Create my data node
         if (zkManager.exists(zkMyTopicStore) == null) {
@@ -262,13 +263,9 @@ public class DataManagerImpl implements DataManager {
         private LamportClock clock;
         private String nodeID;
         public ConcurrentSkipListSet<Message> messageQueue;
-        public MessageHandlerImpl(String nodeID) {
+        public MessageHandlerImpl(String nodeID, ConcurrentSkipListSet<Message> messageQueue) {
             this.clock = LamportClock.getClock();
             this.nodeID = nodeID;
-            this.messageQueue = new ConcurrentSkipListSet<>();
-        }
-
-        public void setMessageQueue(ConcurrentSkipListSet<Message> messageQueue) {
             this.messageQueue = messageQueue;
         }
 
