@@ -5,6 +5,7 @@ import iu.e510.message.board.cluster.data.beans.BaseBean;
 import iu.e510.message.board.cluster.zk.ZKManager;
 import iu.e510.message.board.cluster.zk.ZKManagerImpl;
 import iu.e510.message.board.db.DMBDatabase;
+import iu.e510.message.board.db.model.DMBPost;
 import iu.e510.message.board.tom.MessageService;
 import iu.e510.message.board.tom.common.LamportClock;
 import iu.e510.message.board.tom.common.Message;
@@ -196,6 +197,15 @@ public class DataManagerImpl implements DataManager {
         }
     }
 
+    @Override
+    public DMBPost getPost(String clientID, String topic, int postID) {
+        return null;
+    }
+
+    @Override
+    public List<DMBPost> getPosts(String clientID, String topic) {
+        return database.getAllPostsDataByTopicArrayList(topic);
+    }
 
 
     class MesssageExecutor extends Thread {

@@ -39,7 +39,7 @@ public interface DataManager {
     Set<String> addData(BaseBean dataBean) throws Exception;
 
 
-    DMBPost getPost(String clientID, String topic, int postID);
+    DMBPost getPost(String clientID, String topic, int postID)throws Exception;
 
-    List<DMBPost> getPosts(String clientID, String topic);
+    List<DMBPost> getPosts(String clientID, String topic)throws Exception;
 }
