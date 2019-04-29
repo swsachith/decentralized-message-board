@@ -1,7 +1,9 @@
 package iu.e510.message.board.cluster.data;
 
 import iu.e510.message.board.cluster.data.beans.BaseBean;
+import iu.e510.message.board.db.model.DMBPost;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -36,4 +38,8 @@ public interface DataManager {
 
     Set<String> addData(BaseBean dataBean) throws Exception;
 
+
+    DMBPost getPost(String clientID, String topic, int postID);
+
+    List<DMBPost> getPosts(String clientID, String topic);
 }

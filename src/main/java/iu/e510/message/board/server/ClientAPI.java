@@ -14,6 +14,8 @@ import java.util.Set;
  */
 public interface ClientAPI extends Remote, Serializable {
 
+    Set<String> getNodes(String topic)throws RemoteException;
+
     //Posting, upvoting and downvoting posts
     Set<String> post(String clientID, String topic, String title, String content) throws RemoteException;
 

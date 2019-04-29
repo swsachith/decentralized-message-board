@@ -1,6 +1,7 @@
 package iu.e510.message.board.server;
 
 import iu.e510.message.board.cluster.data.DataManager;
+import iu.e510.message.board.cluster.data.beans.BaseBean;
 import iu.e510.message.board.cluster.data.beans.PostBean;
 import iu.e510.message.board.db.model.DMBPost;
 import org.slf4j.Logger;
@@ -24,9 +25,19 @@ public class ClientAPIImpl extends UnicastRemoteObject implements ClientAPI {
     }
 
     @Override
+    public Set<String> getNodes(String topic) {
+        return dataManager.getNodeIdsForTopic(topic);
+    }
+
+    @Override
     public Set<String> post(String clientID, String topic, String title, String content) throws RemoteException {
         logger.info("Received a post request from: " + clientID + "\tfor topic: " + topic + "\ttitle: " + title);
-        return Collections.emptySet();
+        PostBean post = new PostBean(clientID, topic, title, content);
+        try {
+            return dataManager.addData(post);
+        } catch (Exception e) {
+            throw new RemoteException("Unable to publish post", e);
+        }
     }
 
     @Override
@@ -64,6 +75,6 @@ public class ClientAPIImpl extends UnicastRemoteObject implements ClientAPI {
 
     @Override
     public List<DMBPost> getPosts(String clientID, String topic) {
-        return null;
+        return dataManager.getPosts(clientID, topic);
     }
 }
