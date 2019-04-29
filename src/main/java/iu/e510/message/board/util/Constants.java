@@ -32,6 +32,7 @@ public class Constants {
     // Client configs
     public static final String SUPER_NODE_LIST = "SUPER_NODE_LIST";
     public static final String CLIENT_ID = "CLIENT_ID";
+    public static final String SUPER_NODE_RETRIES = "SUPER_NODE_RETRIES";
 
     // Database configurations
     public static final String DB_DRIVER = "DB_DRIVER";

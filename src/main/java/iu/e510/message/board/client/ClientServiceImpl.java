@@ -21,12 +21,14 @@ public class ClientServiceImpl implements ClientService {
     private List<String> superNodeList;
     private String clientID;
     private Map<String, ClientAPI> topicClientMap;
+    private int serverRetries;
 
     public ClientServiceImpl(String clientID) {
         this.clientID = clientID;
         this.config = new Config();
         String RMI_HOST = config.getConfig(Constants.RMI_REGISTRY_HOST);
         int RMI_PORT = Integer.parseInt(config.getConfig(Constants.RMI_REGISTRY_PORT));
+        this.serverRetries = Integer.parseInt(config.getConfig(Constants.SUPER_NODE_RETRIES));
         this.superNodeList = getSuperNodeList();
         this.topicClientMap = new HashMap<>();
         try {
@@ -78,7 +80,19 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public boolean post(String topic, String title, String content) {
         topic = topic.toLowerCase().trim();
-        return handleClientRequestRecursively(ClientAPIMethodsEnum.POST, new String[]{clientID, topic, title, content});
+        boolean success = false;
+        int i = 0;
+        while (i < serverRetries) {
+            try {
+                success = handleClientRequestRecursively(ClientAPIMethodsEnum.POST, new Object[]{clientID, topic, title, content});
+            } catch (Exception e) {
+                serverConnectionRefresh();
+                logger.debug("Retrying a different super node");
+            } finally {
+                i++;
+            }
+        }
+        return success;
     }
 
     private Method getMethod(ClientAPIMethodsEnum methodEnum) throws NoSuchMethodException {
@@ -109,7 +123,19 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public boolean replyPost(String topic, int postID, String content) {
         topic = topic.toLowerCase().trim();
-        return handleClientRequestRecursively(ClientAPIMethodsEnum.REPLY, new Object[]{clientID, topic, postID, content});
+        boolean success = false;
+        int i = 0;
+        while (i < serverRetries) {
+            try {
+                success = handleClientRequestRecursively(ClientAPIMethodsEnum.REPLY, new Object[]{clientID, topic, postID, content});
+            } catch (Exception e) {
+                serverConnectionRefresh();
+                logger.debug("Retrying a different super node");
+            } finally {
+                i++;
+            }
+        }
+        return success;
     }
 
     @Override
@@ -178,7 +204,7 @@ public class ClientServiceImpl implements ClientService {
         throw new RuntimeException("Cannot connect to any of the super nodes.");
     }
 
-    private boolean handleClientRequestRecursively(ClientAPIMethodsEnum methodName, Object[] parameters) {
+    private boolean handleClientRequestRecursively(ClientAPIMethodsEnum methodName, Object[] parameters) throws Exception {
         Method method;
         Set<String> results;
         try {
@@ -207,8 +233,7 @@ public class ClientServiceImpl implements ClientService {
                 }
             }
         } catch (Exception e) {
-            logger.error("Error executing the method." + e.getMessage(), e);
-            return false;
+            throw new Exception("Cannot connect to the client");
         }
         return false;
     }
