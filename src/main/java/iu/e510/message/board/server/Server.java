@@ -3,6 +3,8 @@ package iu.e510.message.board.server;
 import iu.e510.message.board.cluster.ClusterManager;
 import iu.e510.message.board.cluster.data.DataManager;
 import iu.e510.message.board.cluster.data.DataManagerImpl;
+import iu.e510.message.board.db.DMBDatabase;
+import iu.e510.message.board.db.DMBDatabaseImpl;
 import iu.e510.message.board.tom.MessageService;
 import iu.e510.message.board.tom.MessageServiceImpl;
 import iu.e510.message.board.tom.common.Message;
@@ -28,19 +30,23 @@ public class Server {
     private MessageService messageService;
     private Registry registry;
     private BlockingQueue<Message> superNodeMsgQueue;
+    private DMBDatabase database;
 
     public Server(String nodeID) throws Exception {
         this.id = nodeID;
         this.config = new Config();
 
         this.superNodeMsgQueue = new LinkedBlockingDeque<>();
+
+        this.database = new DMBDatabaseImpl(nodeID);
+
         this.messageService = new MessageServiceImpl("tcp://" + id, id,
-                superNodeMsgQueue);
+                superNodeMsgQueue, database);
 
         this.clusterManager = new ClusterManager(id, messageService);
 
         this.dataManager = new DataManagerImpl(id, messageService, superNodeMsgQueue,
-                clusterManager);
+                clusterManager, database);
 
 
         // Binding the RMI client stubs

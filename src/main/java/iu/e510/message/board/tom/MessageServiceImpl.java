@@ -1,6 +1,6 @@
 package iu.e510.message.board.tom;
 
-import iu.e510.message.board.cluster.data.DataAdapter;
+import iu.e510.message.board.db.DMBDatabase;
 import iu.e510.message.board.tom.common.LamportClock;
 import iu.e510.message.board.tom.common.Message;
 import iu.e510.message.board.tom.common.MessageType;
@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.zeromq.ZContext;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -31,10 +32,11 @@ public class MessageServiceImpl implements MessageService {
     private Config config;
 
     private BlockingQueue<Message> superNodeMsgQueue;
-    private DataAdapter dataAdapter;
+    private DMBDatabase database;
 
     public MessageServiceImpl(String serverBindURI, String nodeID,
-                              BlockingQueue<Message> superNodeMsgQueue) {
+                              BlockingQueue<Message> superNodeMsgQueue,
+                              DMBDatabase database) {
         config = new Config();
         clock = LamportClock.getClock();
         this.serverBindURI = serverBindURI;
@@ -48,8 +50,8 @@ public class MessageServiceImpl implements MessageService {
         this.messageReceiver = new MessageReceiver(context, this.serverBindURI, this.messageHandler);
         this.messageDeliveryService = new MessageDeliveryService(this.messageQueue, nodeID, this.deliveryHandler);
 
-//        this.dataAdapter = dataAdapter;
         this.superNodeMsgQueue = superNodeMsgQueue;
+        this.database = database;
 
         this.messageReceiver.start();
         this.messageDeliveryService.start();
@@ -57,12 +59,12 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public void send_ordered(String message, List<String> recipients, MessageType messageType) {
+    public void send_ordered(Payload message, Set<String> recipients, MessageType messageType) {
         // add yourself to the recipient list
         recipients.add(serverBindURI);
         // multicast the message to all the recipients
         int clock = this.clock.incrementAndGet();
-        Message msg = new Message(new Payload<>(message), nodeID, clock, false, messageType);
+        Message msg = new Message(message, nodeID, clock, false, messageType);
         msg.setRecipients(recipients);
         for (String recipient : recipients) {
             Message response = messageSender.sendMessage(msg, recipient, this.clock.get());
@@ -123,7 +125,7 @@ public class MessageServiceImpl implements MessageService {
                     clock.incrementAndGet(), false, message.getMessageType());
             releaseMessage.setRelease(message.getId());
 
-            List<String> recipients = message.getRecipients();
+            Set<String> recipients = message.getRecipients();
 
             //todo: add delivering into data manager
             // deliver the message to yourself
@@ -227,7 +229,8 @@ public class MessageServiceImpl implements MessageService {
             if (message.getMessageType() == MessageType.DATA_REQUEST) {
                 String topic = (String) message.getPayload().getContent();
                 logger.debug("Data request received for topic: " + topic);
-                byte[] data = dataAdapter.getDataDump(topic);
+
+                byte[] data = database.getPostsDataByTopicByteArray(topic);
 
                 return new Message(new Payload<>(nodeID, data), nodeID, clock.get(), true,
                         MessageType.DATA_RESPONSE);

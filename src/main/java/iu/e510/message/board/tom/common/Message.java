@@ -1,10 +1,7 @@
 package iu.e510.message.board.tom.common;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 public class Message implements Serializable, Comparable<Message> {
     private Payload payload;
@@ -14,7 +11,7 @@ public class Message implements Serializable, Comparable<Message> {
     private String ack;
     private String release;
     private String id;
-    private List<String> recipients;
+    private Set<String> recipients;
     private boolean allAcked;
     private MessageType messageType;
 
@@ -27,7 +24,7 @@ public class Message implements Serializable, Comparable<Message> {
         this.ack = "";
         this.release = "";
         this.id = UUID.randomUUID().toString();
-        this.recipients = new ArrayList<>();
+        this.recipients = new HashSet<>();
         this.allAcked = false;
         this.messageType = messageType;
     }
@@ -96,11 +93,11 @@ public class Message implements Serializable, Comparable<Message> {
         this.id = id;
     }
 
-    public List<String> getRecipients() {
+    public Set<String> getRecipients() {
         return recipients;
     }
 
-    public void setRecipients(List<String> recipients) {
+    public void setRecipients(Set<String> recipients) {
         this.recipients = recipients;
     }
 

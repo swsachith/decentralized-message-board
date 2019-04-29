@@ -1,6 +1,7 @@
 package iu.e510.message.board.server;
 
 import iu.e510.message.board.cluster.data.DataManager;
+import iu.e510.message.board.cluster.data.beans.PostBean;
 import iu.e510.message.board.db.model.DMBPost;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,21 +24,14 @@ public class ClientAPIImpl extends UnicastRemoteObject implements ClientAPI {
     }
 
     @Override
-    public Set<String> getServersForTopic(String topic) {
-        return dataManager.getNodeIdsForTopic(topic);
-    }
-
-    @Override
     public Set<String> post(String clientID, String topic, String title, String content) throws RemoteException {
         logger.info("Received a post request from: " + clientID + "\tfor topic: " + topic + "\ttitle: " + title);
-        Set<String> servers = getServersForTopic(topic);
-        if (servers.contains(myNodeId)) {
-            // todo: save the infomation
-
-            return Collections.emptySet();
+        PostBean bean = new PostBean(clientID, topic, po)
+        try {
+            return dataManager.post(clientID, topic, title, content);
+        } catch (Exception e) {
+            throw new RemoteException("Unable to create the post ", e);
         }
-
-        return servers;
     }
 
     @Override

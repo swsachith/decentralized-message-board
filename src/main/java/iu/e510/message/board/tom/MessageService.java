@@ -4,7 +4,7 @@ import iu.e510.message.board.tom.common.Message;
 import iu.e510.message.board.tom.common.MessageType;
 import iu.e510.message.board.tom.common.Payload;
 
-import java.util.List;
+import java.util.Set;
 
 public interface MessageService {
 
@@ -13,7 +13,7 @@ public interface MessageService {
      * @param message
      * @param recipients
      */
-    void send_ordered(String message, List<String> recipients, MessageType messageType);
+    void send_ordered(Payload message, Set<String> recipients, MessageType messageType);
 
     /**
      * Point to Point message passing.

@@ -1,11 +1,12 @@
 package iu.e510.message.board.cluster.data;
 
-import java.util.List;
+import iu.e510.message.board.cluster.data.beans.BaseBean;
+
 import java.util.Map;
 import java.util.Set;
 
 public interface DataManager {
-    void addData(String path, byte[] data) throws Exception;
+    void addData(String path, PayloadType type, byte[] payload) throws Exception;
 
     byte[] getData(String path);
 
@@ -31,4 +32,8 @@ public interface DataManager {
      * @return
      */
     Map<String, Set<String>> getTransferTopics(String newNodeID);
+
+
+    Set<String> addData(BaseBean dataBean) throws Exception;
+
 }

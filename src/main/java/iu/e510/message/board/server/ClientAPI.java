@@ -14,9 +14,7 @@ import java.util.Set;
  */
 public interface ClientAPI extends Remote, Serializable {
 
-    Set<String> getServersForTopic(String topic);
-
-    // Posting, upvoting and downvoting posts
+    //Posting, upvoting and downvoting posts
     Set<String> post(String clientID, String topic, String title, String content) throws RemoteException;
 
     Set<String> upvotePost(String clientID, String topic, int postID) throws RemoteException;

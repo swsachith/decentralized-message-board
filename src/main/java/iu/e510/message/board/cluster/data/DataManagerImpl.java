@@ -1,8 +1,10 @@
 package iu.e510.message.board.cluster.data;
 
 import iu.e510.message.board.cluster.ClusterManager;
+import iu.e510.message.board.cluster.data.beans.BaseBean;
 import iu.e510.message.board.cluster.zk.ZKManager;
 import iu.e510.message.board.cluster.zk.ZKManagerImpl;
+import iu.e510.message.board.db.DMBDatabase;
 import iu.e510.message.board.tom.MessageService;
 import iu.e510.message.board.tom.common.Message;
 import iu.e510.message.board.tom.common.MessageType;
@@ -33,18 +35,18 @@ public class DataManagerImpl implements DataManager {
     private String zkMyTopicStore;
 
     private MessageService messageService;
-    private BlockingQueue<Message> internalMessageQueue;
+    private BlockingQueue<Message> superNodeMsgQueue;
     private MesssageExecutor messsageExecutor;
-
-    private DataAdapter dataAdapter;
 
     private AtomicBoolean consistency;
 
     private ClusterManager clusterManager;
 
+    private DMBDatabase database;
+
     public DataManagerImpl(String nodeID, MessageService messageService,
-                           BlockingQueue<Message> internalMessageQueue,
-                           ClusterManager clusterManager) throws Exception {
+                           BlockingQueue<Message> superNodeMsgQueue,
+                           ClusterManager clusterManager, DMBDatabase database) throws Exception {
         logger.info("Initializing the Data Manager!");
         this.config = new Config();
         this.myNodeID = nodeID;
@@ -52,8 +54,9 @@ public class DataManagerImpl implements DataManager {
 
         this.consistency = new AtomicBoolean(true);
         this.messageService = messageService;
-        this.internalMessageQueue = internalMessageQueue;
+        this.superNodeMsgQueue = superNodeMsgQueue;
         this.clusterManager = clusterManager;
+        this.database = database;
 
         this.messsageExecutor = new MesssageExecutor();
 
@@ -82,7 +85,7 @@ public class DataManagerImpl implements DataManager {
     }
 
     @Override
-    public void addData(String path, byte[] data) throws Exception {
+    public void addData(String path, PayloadType type, byte[] payload) throws Exception {
         try {
             writeLock.lock();
             // write to ZK only if the topic is not already recorded
@@ -92,7 +95,7 @@ public class DataManagerImpl implements DataManager {
             }
 
             // store data here
-            dataAdapter.putDataDump(path, data);
+            //todo: save data in the db here.
 
         } finally {
             writeLock.unlock();
@@ -177,6 +180,23 @@ public class DataManagerImpl implements DataManager {
     }
 
 
+    @Override
+    public Set<String> addData(BaseBean dataBean) throws Exception {
+        Set<String> nodes = getNodeIdsForTopic(dataBean.getTopic());
+
+        if (nodes.contains(myNodeID)){
+            // multicast
+            messageService.send_ordered(new Payload<>(dataBean), nodes, MessageType);
+
+            return Collections.emptySet();
+        } else {
+            return nodes;
+        }
+    }
+
+
+
+
     class MesssageExecutor extends Thread {
         private boolean running = true;
 
@@ -188,7 +208,7 @@ public class DataManagerImpl implements DataManager {
         public void run() {
             while (running) {
                 try {
-                    Message message = internalMessageQueue.take();
+                    Message message = superNodeMsgQueue.take();
                     logger.info("Server is inconsistent");
                     setConsistency(false);
 
@@ -204,7 +224,7 @@ public class DataManagerImpl implements DataManager {
                                 logger.info("Requesting data from the cluster for: " + topic);
                                 byte[] data = getData(topic);
                                 logger.debug("Received data: " + Arrays.toString(data));
-                                dataAdapter.putDataDump(topic, data);
+                                database.addPostsDataFromByteArray(data);
                             }
                         }
                     } else if (message.getMessageType() == MessageType.TRANSFER) {
