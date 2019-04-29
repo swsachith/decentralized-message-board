@@ -186,7 +186,7 @@ public class DataManagerImpl implements DataManager {
 
         if (nodes.contains(myNodeID)){
             // multicast
-            messageService.send_ordered(new Payload<>(dataBean), nodes, MessageType);
+            messageService.send_ordered(new Payload<>(dataBean), nodes, MessageType.CLIENT_DATA);
 
             return Collections.emptySet();
         } else {

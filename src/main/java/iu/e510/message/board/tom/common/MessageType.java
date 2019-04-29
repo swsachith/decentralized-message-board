@@ -5,5 +5,7 @@ public enum MessageType {
     SYNC,
 
     DATA_REQUEST,
-    DATA_RESPONSE
+    DATA_RESPONSE,
+
+    CLIENT_DATA
 }

@@ -7,10 +7,14 @@ public class PostBean extends BaseBean {
     public PostBean(String clientID, String topic, String title, String content) {
         super(clientID, topic);
         this.title = title;
-        this.content =
+        this.content = content;
     }
 
-    public int getPostID() {
-        return postID;
+    public String getTitle() {
+        return title;
+    }
+
+    public String getContent() {
+        return content;
     }
 }

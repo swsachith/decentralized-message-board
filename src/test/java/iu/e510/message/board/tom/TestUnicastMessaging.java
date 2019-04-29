@@ -17,7 +17,8 @@ public class TestUnicastMessaging {
     @BeforeSuite
     public static void setup() {
         clock = LamportClock.getClock();
-        messageService = new MessageServiceImpl(unicastServerBindURL, unicastServerBindURL, null);
+        messageService = new MessageServiceImpl(unicastServerBindURL, unicastServerBindURL, null,
+                null);
     }
 
     @Test

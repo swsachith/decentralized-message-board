@@ -33,8 +33,8 @@ public class Main {
             String method = tokens[0];
             switch (method) {
                 case POST:
-                    boolean result = clientService.post(tokens[1].trim(), tokens[2].trim(), tokens[3].trim());
-                    System.out.println(result);
+//                    boolean result = clientService.post(tokens[1].trim(), tokens[2].trim(), tokens[3].trim());
+//                    System.out.println(result);
                     break;
                 case REPLY:
                     break;
