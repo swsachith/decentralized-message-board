@@ -6,6 +6,7 @@ import iu.e510.message.board.util.Constants;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 
 public class Main {
     public static final String POST = "post";
@@ -31,15 +32,20 @@ public class Main {
                 continue;
             }
             String method = tokens[0];
+            boolean result = false;
             switch (method) {
                 case POST:
-//                    boolean result = clientService.post(tokens[1].trim(), tokens[2].trim(), tokens[3].trim());
-//                    System.out.println(result);
+                    result = clientService.post(tokens[1].trim(), tokens[2].trim(), tokens[3].trim());
                     break;
                 case REPLY:
                     break;
                 default:
                     break;
+            }
+            if (result) {
+                System.out.println("The request was successfully executed");
+            } else {
+                System.out.println("Posting failed. Please try again");
             }
         }
         scanner.close();

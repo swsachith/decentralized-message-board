@@ -10,9 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class ClientServiceImpl implements ClientService {
     private static Logger logger = LoggerFactory.getLogger(ClientServiceImpl.class);
@@ -21,6 +19,7 @@ public class ClientServiceImpl implements ClientService {
     private Registry registry;
     private List<String> superNodeList;
     private String clientID;
+    private Map<String, ClientAPI> topicClientMap;
 
     public ClientServiceImpl(String clientID) {
         this.clientID = clientID;
@@ -28,6 +27,7 @@ public class ClientServiceImpl implements ClientService {
         String RMI_HOST = config.getConfig(Constants.RMI_REGISTRY_HOST);
         int RMI_PORT = Integer.parseInt(config.getConfig(Constants.RMI_REGISTRY_PORT));
         this.superNodeList = getSuperNodeList();
+        this.topicClientMap = new HashMap<>();
         try {
             registry = LocateRegistry.getRegistry(RMI_HOST, RMI_PORT);
             clientAPI = getWorkingClientAPI();
@@ -38,6 +38,7 @@ public class ClientServiceImpl implements ClientService {
 
     /**
      * Returns a working Supernode RMI object from the provided Super node list.
+     *
      * @return
      */
     private ClientAPI getWorkingClientAPI() {
@@ -65,6 +66,7 @@ public class ClientServiceImpl implements ClientService {
 
     /**
      * Reads the list of super nodes from the configs and return an ArrayList
+     *
      * @return
      */
     private List<String> getSuperNodeList() {
@@ -73,33 +75,87 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
-    public Set<String> post(String topic, String title, String content) {
-        return null;
+    public boolean post(String topic, String title, String content) {
+        topic = topic.toLowerCase().trim();
+        Set<String> results;
+        try {
+            // if the cache has a topic client mapping, use that. Else use the current clientAPI
+            ClientAPI topicClient = topicClientMap.get(topic);
+            if (topicClient != null) {
+                results = topicClient.post(clientID, topic, title, content);
+            } else {
+                results = clientAPI.post(clientID, topic, title, content);
+            }
+            if (results != null) {
+                if (results.isEmpty()) {
+                    return true;
+                } else {
+                    // if the contacted node does not have that topic, retry with the retry list.
+                    ClientAPI topicClientAPI = getClientAPI(results);
+                    Set<String> newResult = topicClientAPI.post(clientID, topic, title, content);
+                    if (newResult.isEmpty()) {
+                        topicClientMap.put(topic, topicClientAPI);
+                        return true;
+                    }
+                }
+            }
+        } catch (RemoteException e) {
+            logger.error("Error executing the method." + e.getMessage(), e);
+            return false;
+        }
+        return false;
     }
 
     @Override
-    public Set<String> upvotePost(String topic, int postID) {
-        return null;
+    public boolean upvotePost(String topic, int postID) {
+        return false;
     }
 
     @Override
-    public Set<String> downvotePost(String topic, int postID) {
-        return null;
+    public boolean downvotePost(String topic, int postID) {
+        return false;
     }
 
     @Override
-    public Set<String> replyPost(String topic, int postID, String content) {
-        return null;
+    public boolean replyPost(String topic, int postID, String content) {
+        topic = topic.toLowerCase().trim();
+        Set<String> results;
+        try {
+            // if the cache has a topic client mapping, use that. Else use the current clientAPI
+            ClientAPI topicClient = topicClientMap.get(topic);
+            if (topicClient != null) {
+                results = topicClient.replyPost(clientID, topic, postID, content);
+            } else {
+                results = clientAPI.replyPost(clientID, topic, postID, content);
+            }
+            if (results != null) {
+                if (results.isEmpty()) {
+                    return true;
+                } else {
+                    // if the contacted node does not have that topic, retry with the retry list.
+                    ClientAPI topicClientAPI = getClientAPI(results);
+                    Set<String> newResult = topicClientAPI.replyPost(clientID, topic, postID, content);
+                    if (newResult.isEmpty()) {
+                        topicClientMap.put(topic, topicClientAPI);
+                        return true;
+                    }
+                }
+            }
+        } catch (RemoteException e) {
+            logger.error("Error executing the method." + e.getMessage(), e);
+            return false;
+        }
+        return false;
     }
 
     @Override
-    public Set<String> upvoteReply(String topic, int postID, int replyID) {
-        return null;
+    public boolean upvoteReply(String topic, int postID, int replyID) {
+        return false;
     }
 
     @Override
-    public Set<String> downvoteReply(String topic, int postID, int replyID) {
-        return null;
+    public boolean downvoteReply(String topic, int postID, int replyID) {
+        return false;
     }
 
     @Override
@@ -110,5 +166,26 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public List<DMBPost> getPosts(String topic) {
         return null;
+    }
+
+    /**
+     * Returns a reference to a working client in the hash ring for a given client list.
+     *
+     * @param clientIDList
+     * @return
+     */
+    private ClientAPI getClientAPI(Set<String> clientIDList) {
+        //todo: return a random api
+        ClientAPI clientAPI;
+        for (String clientID : clientIDList) {
+            logger.info("Trying to connect to: " + clientID);
+            try {
+                clientAPI = (ClientAPI) registry.lookup(clientID);
+                return clientAPI;
+            } catch (Exception e) {
+                logger.info(clientID + " cannot be reached. Hence trying the next node");
+            }
+        }
+        throw new RuntimeException("Cannot connect to any of the clients.");
     }
 }
