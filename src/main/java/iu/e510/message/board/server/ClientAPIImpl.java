@@ -93,6 +93,7 @@ public class ClientAPIImpl extends UnicastRemoteObject implements ClientAPI {
 
     private Set<String> dataManagerAddData(BaseBean dataBean) throws RemoteException {
         try {
+            // todo: return the set if this is inconsistent
             return dataManager.addData(dataBean);
         } catch (Exception e) {
             throw new RemoteException("Unable to publish post reply", e);

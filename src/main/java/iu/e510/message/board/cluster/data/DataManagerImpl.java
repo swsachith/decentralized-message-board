@@ -340,6 +340,11 @@ public class DataManagerImpl implements DataManager {
             if (type.equals(MessageType.TRANSFER) || type.equals(MessageType.SYNC)) {
                 nonBlockingMessageProcessing(message);
                 return null;
+            } else if (type.equals(MessageType.LOST_CONNECTION)) {
+                //todo handle this, set inconsistent
+                setConsistent(false);
+                logger.info("Lost connection with Zookeeper, Network partitioned. Hence becoming inconsistent until connection");
+                return null;
             } else {
                 return blockingMessageProcessing(message);
             }

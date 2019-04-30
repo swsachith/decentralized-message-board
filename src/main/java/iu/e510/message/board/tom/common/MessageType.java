@@ -5,6 +5,9 @@ public enum MessageType {
     TRANSFER,
     SYNC,
 
+    // when connection is lost with zookeeper
+    LOST_CONNECTION,
+
     // sent by workers in response to master's messages - unicast
     TRANSFER_TOPICS,
     DELETE_TOPICS,

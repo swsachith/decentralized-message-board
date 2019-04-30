@@ -9,6 +9,7 @@ import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
@@ -108,6 +109,12 @@ public class ClusterManager implements LeaderLatchListener {
      */
     private void addClusterChangeListner(PathChildrenCache cache) {
         PathChildrenCacheListener listener = (curatorFramework, event) -> {
+            if (event.getType() == PathChildrenCacheEvent.Type.CONNECTION_LOST ||
+                    event.getType() == PathChildrenCacheEvent.Type.CONNECTION_SUSPENDED) {
+                messageService.send_unordered(new Payload("Network Partitioned"), messageService.getUrl(nodeID),
+                        MessageType.LOST_CONNECTION);
+                return;
+            }
             String eventNodeID = event.getData().getPath().substring(clusterParentZK.length() + 1);
             if (eventNodeID.equals(nodeID)) {
                 return;
