@@ -24,4 +24,11 @@ public class Payload<T> implements Serializable {
     public T getContent() {
         return content;
     }
+
+    @Override
+    public String toString() {
+        return "Payload{" +
+                "content=" + content +
+                '}';
+    }
 }
