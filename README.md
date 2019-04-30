@@ -33,6 +33,7 @@ From the <source_dir>/bin/lib, run
 java -jar iu.e510.message.board-client.jar
 ```
 
+Optionally you can provide a client id by using the ```-clientID``` commandline argument. 
 #### Commands supported through the client stdin
 -   Posting: 
     ```

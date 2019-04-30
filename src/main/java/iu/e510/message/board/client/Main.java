@@ -3,28 +3,33 @@ package iu.e510.message.board.client;
 import iu.e510.message.board.db.model.DMBPost;
 import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
+import org.apache.commons.cli.*;
 
 import java.util.List;
 import java.util.Scanner;
 
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ParseException {
+        // Client id (parsed from the commandline or using the config)
         Config config = new Config();
-        String clientID = config.getConfig(Constants.CLIENT_ID);
-        // todo: remove this when building the final jar, this is for testing only
-        clientID = "sachith";
+        String configClientID = config.getConfig(Constants.CLIENT_ID);
+        Options options = new Options();
+        options.addOption("clientID", true, "clientID");
+        CommandLineParser commandLineParser = new DefaultParser();
+        CommandLine cmd = commandLineParser.parse(options, args);
+        String clientID = cmd.getOptionValue("clientID", configClientID);
 
         ClientService clientService = new ClientServiceImpl(clientID);
 
         // input processing from the standard in
         Scanner scanner = new Scanner(System.in);
+        System.out.println("Hi " + clientID + "!");
         while (scanner.hasNextLine()) {
             String[] tokens = scanner.nextLine().split(",");
             if (tokens.length == 1 && tokens[0].equals("stop")) {
                 System.exit(0);
             }
             else if (tokens.length < 1) {
-                //todo: add a comprehensive input format
                 System.out.println("Wrong input format.");
                 continue;
             }
