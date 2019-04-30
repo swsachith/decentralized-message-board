@@ -201,12 +201,12 @@ public class DataManagerImpl implements DataManager {
 
     @Override
     public DMBPost getPost(String clientID, String topic, int postID) {
-        return null;
+        return database.getPostDataByPostId(postID);
     }
 
     @Override
     public List<DMBPost> getPosts(String clientID, String topic) {
-        return database.getAllPostsDataByTopicArrayList(topic);
+        return database.getPostsDataByTopicArrayList(topic);
     }
 
 
