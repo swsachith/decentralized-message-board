@@ -4,10 +4,8 @@ import iu.e510.message.board.db.model.DMBPost;
 import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.Set;
 
 public class Main {
     public static void main(String[] args) {
@@ -99,7 +97,7 @@ public class Main {
                 }
                 DMBPost post = clientService.getPost(tokens[1].trim().toLowerCase(), Integer.parseInt(tokens[2].trim()));
                 if (post != null) {
-                    System.out.println(post);
+                    System.out.println(post.getFullPostString());
                 } else {
                     System.out.println("No such post found!");
                 }

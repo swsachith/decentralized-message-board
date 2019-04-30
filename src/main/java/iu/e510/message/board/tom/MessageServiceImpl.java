@@ -130,7 +130,7 @@ public class MessageServiceImpl implements MessageService {
 
             // Add delivering into data manager by putting the message into the queue
             // deliver the message to yourself
-            logger.info("[pid:" + nodeID + "][clock:" + clock.get() + "] Delivering message: "
+            logger.debug("[pid:" + nodeID + "][clock:" + clock.get() + "] Delivering message: "
                     + message.getId() + " to myself");
             logger.debug("Saving message for async process: " + message.toString());
             try {

@@ -44,8 +44,8 @@ public class MessageDeliveryService extends Thread {
                     // race condition occurred. Was not empty before if condition, but was empty right after
                 }
                 if (first != null && first.getNodeID() == nodeID && first.isAllAcked()) {
-                    logger.info("My message at the head of the message queue, hence releasing! Current Queue: ");
-                    logger.info(messageQueue.toString());
+                    logger.debug("My message at the head of the message queue, hence releasing! Current Queue: ");
+                    logger.debug(messageQueue.toString());
                     handler.deliverReleaseMessage(first);
                     messageQueue.remove(first);
                 }
