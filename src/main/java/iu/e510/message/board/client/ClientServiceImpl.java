@@ -70,7 +70,7 @@ public class ClientServiceImpl implements ClientService {
      */
     private void serverConnectionRefresh() {
         logger.error("Server connection refreshing");
-        getWorkingClientAPI();
+        clientAPI = getWorkingClientAPI();
     }
 
     /**
@@ -170,11 +170,13 @@ public class ClientServiceImpl implements ClientService {
                 if (topicClient != null) {
                     try {
                         results = topicClient.getPosts(clientID, topic);
+
+                        if (!results.isEmpty()) {
+                            return results;
+                        }
                     } catch (RemoteException e) {
                         logger.debug("Cache miss for the topic: " + topic);
-                    }
-                    if (!results.isEmpty()) {
-                        return results;
+                        topicClientMap.remove(topic);
                     }
                 } else {
                     Set<String> nodes = clientAPI.getNodes(topic);
@@ -224,14 +226,19 @@ public class ClientServiceImpl implements ClientService {
 
     private boolean handleClientRequestRecursively(ClientAPIMethodsEnum methodName, Object[] parameters) throws Exception {
         Method method;
-        Set<String> results;
+        Set<String> results = null;
         try {
             method = getMethod(methodName);
             // if the cache has a topic client mapping, use that. Else use the current clientAPI
             String topic = (String) parameters[1];
             ClientAPI topicClient = topicClientMap.get(topic);
             if (topicClient != null) {
-                results = (Set<String>) method.invoke(topicClient, parameters);
+                try {
+                    results = (Set<String>) method.invoke(topicClient, parameters);
+                } catch (Exception e) {
+                    logger.debug("Cache miss for the topic: " + topic);
+                    topicClientMap.remove(topic);
+                }
             } else {
                 results = (Set<String>) method.invoke(clientAPI, parameters);
             }
