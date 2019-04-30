@@ -13,10 +13,8 @@ public class Message implements Serializable, Comparable<Message> {
     private String id;
     private Set<String> recipients;
     private boolean allAcked;
-    private MessageType messageType;
 
-    public Message(Payload payload, String nodeID, int clock, boolean unicast,
-                   MessageType messageType) {
+    public Message(Payload payload, String nodeID, int clock, boolean unicast) {
         this.payload = payload;
         this.nodeID = nodeID;
         this.clock = clock;
@@ -26,15 +24,6 @@ public class Message implements Serializable, Comparable<Message> {
         this.id = UUID.randomUUID().toString();
         this.recipients = new HashSet<>();
         this.allAcked = false;
-        this.messageType = messageType;
-    }
-
-    public MessageType getMessageType() {
-        return messageType;
-    }
-
-    public void setMessageType(MessageType messageType) {
-        this.messageType = messageType;
     }
 
     public boolean isAllAcked() {

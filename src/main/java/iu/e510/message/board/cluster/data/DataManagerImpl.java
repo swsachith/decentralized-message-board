@@ -2,15 +2,14 @@ package iu.e510.message.board.cluster.data;
 
 import iu.e510.message.board.cluster.ClusterManager;
 import iu.e510.message.board.cluster.data.beans.BaseBean;
+import iu.e510.message.board.cluster.data.payloads.ClientDataPayload;
+import iu.e510.message.board.cluster.data.payloads.DataRequestPayload;
 import iu.e510.message.board.cluster.zk.ZKManager;
 import iu.e510.message.board.cluster.zk.ZKManagerImpl;
 import iu.e510.message.board.db.DMBDatabase;
 import iu.e510.message.board.db.model.DMBPost;
 import iu.e510.message.board.tom.MessageService;
-import iu.e510.message.board.tom.common.LamportClock;
-import iu.e510.message.board.tom.common.Message;
-import iu.e510.message.board.tom.common.MessageType;
-import iu.e510.message.board.tom.common.Payload;
+import iu.e510.message.board.tom.common.*;
 import iu.e510.message.board.tom.core.MessageHandler;
 import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
@@ -48,6 +47,9 @@ public class DataManagerImpl implements DataManager {
 
     private DMBDatabase database;
 
+    private LamportClock clock;
+
+
     public DataManagerImpl(String nodeID, MessageService messageService,
                            BlockingQueue<Message> superNodeMsgQueue,
                            ClusterManager clusterManager, DMBDatabase database,
@@ -63,7 +65,7 @@ public class DataManagerImpl implements DataManager {
         this.clusterManager = clusterManager;
         this.database = database;
 
-        this.messsageExecutor = new MesssageExecutor();
+        this.messsageExecutor = new MesssageExecutor(this);
 
         this.lock = new ReentrantReadWriteLock();
         this.readLock = this.lock.readLock();
@@ -85,6 +87,8 @@ public class DataManagerImpl implements DataManager {
                 this.myTopics = new HashSet<>();
             }
         }
+
+        this.clock = LamportClock.getClock();
 
         this.messsageExecutor.start();
 
@@ -112,16 +116,15 @@ public class DataManagerImpl implements DataManager {
     }
 
     @Override
-    public byte[] getData(String topic) {
-        // todo: send data from the DB. Remove the following stub
+    public byte[] requestData(String topic) {
         Set<String> nodes = clusterManager.getHashingNodes(topic);
 
         logger.debug("Requesting data for: " + topic + " from: " + nodes);
         for (String node : nodes) {
             logger.debug("Talking to " + node);
 
-            Message response = messageService.send_unordered(new Payload<>(topic),
-                    messageService.getUrl(node), MessageType.DATA_REQUEST);
+            Message response = messageService.send_unordered(new DataRequestPayload(topic),
+                    messageService.getUrl(node));
 
             if (response != null) return (byte[]) response.getPayload().getContent();
         }
@@ -190,7 +193,7 @@ public class DataManagerImpl implements DataManager {
 
         if (nodes.contains(myNodeID) && isConsistent()){
             logger.info("Sending multicast: " + dataBean.toString());
-            messageService.send_ordered(new Payload<>(dataBean), nodes, MessageType.CLIENT_DATA);
+            messageService.send_ordered(new ClientDataPayload(dataBean), nodes);
 
             return Collections.emptySet();
         } else {
@@ -210,8 +213,58 @@ public class DataManagerImpl implements DataManager {
     }
 
 
+    /**
+     * Synchronous/ blocking processing of a message
+     */
+    @Override
+    public Message processMessage(Message message) {
+        logger.debug("Processing message: " + message.toString());
+
+        if (message instanceof BlockingCall) {
+            return ((BlockingCall) message).process(this);
+        } else {
+            throw new RuntimeException("Unknown message type for sync process: " + message);
+        }
+    }
+
+    @Override
+    public void queueMessage(Message message) {
+        logger.debug("Saving message for async process: " + message.toString());
+        try {
+            superNodeMsgQueue.put(message);
+        } catch (InterruptedException e) {
+            logger.error("Unable to access queue ", e);
+            throw new RuntimeException("Unable to access queue ", e);
+        }
+    }
+
+
+    @Override
+    public int getLamportTimestamp() {
+        return clock.get();
+    }
+
+    @Override
+    public MessageService getMessageService() {
+        return messageService;
+    }
+
+
+    @Override
+    public DMBDatabase getDatabase() {
+        return database;
+    }
+
+
     class MesssageExecutor extends Thread {
         private boolean running = true;
+
+        private DataManager dataManager;
+
+        public MesssageExecutor(DataManager dataManager) {
+            super();
+            this.dataManager = dataManager;
+        }
 
         void stopExecutor() {
             this.running = false;
@@ -225,59 +278,8 @@ public class DataManagerImpl implements DataManager {
                     logger.info("Server is inconsistent");
                     setConsistent(false);
 
-                    if (message.getMessageType() == MessageType.SYNC) {
-                        logger.info("Processing SYNC msg: " + message);
-
-                        // topics set which needs to be grabbed from the peers
-                        Set<String> topics = (Set<String>) message.getPayload().getContent();
-
-                        for (String topic : topics) {
-                            if (hasData(topic)) {
-                                logger.info("Nothing to do! Data available locally for: " + topic);
-                            } else {
-                                logger.info("Requesting data from the cluster for: " + topic);
-                                byte[] data = getData(topic);
-                                logger.debug("Received data: " + Arrays.toString(data));
-
-                                // add data to topics set and zk
-                                addTopicData(topic);
-                                database.addPostsDataFromByteArray(data);
-                            }
-                        }
-                    } else if (message.getMessageType() == MessageType.TRANSFER) {
-                        logger.info("Processing TRANSFER msg: " + message);
-
-                        // take the topics from the message
-                        String nodeToTalk = (String) message.getPayload().getContent();
-                        logger.info("Master asks me to talk to: " + nodeToTalk + " and transfer " +
-                                "the relevant topics");
-
-                        Message response = messageService.send_unordered(new Payload<>(myNodeID),
-                                messageService.getUrl(nodeToTalk), MessageType.TRANSFER_TOPICS);
-
-                        superNodeMsgQueue.add(response);
-
-                    } else if (message.getMessageType() == MessageType.DELETE_TOPICS) {
-                        logger.info("Delete topics received!");
-                        Set<String> delTopics = (Set<String>) message.getPayload().getContent();
-
-                        for (String topic : delTopics) {
-                            deleteData(topic);
-                            database.removePostsDataByTopic(topic);
-                        }
-
-
-                    } else if (message.getMessageType() == MessageType.CLIENT_DATA) {
-                        logger.info("Client data received!");
-
-                        Payload<BaseBean> payload = message.getPayload();
-                        BaseBean bean = payload.getContent();
-
-                        // add data to topics set and zk
-                        addTopicData(bean.getTopic());
-
-                        // process payload data bean and store the data in the db
-                        bean.processBean(database);
+                    if (message instanceof NonBlockingCall) {
+                        ((NonBlockingCall) message).process(dataManager);
                     }
                     else {
                         throw new RuntimeException("Unknown message type: " + message);
@@ -296,11 +298,9 @@ public class DataManagerImpl implements DataManager {
     }
     protected class MessageHandlerImpl implements MessageHandler {
         private Logger logger = LoggerFactory.getLogger(MessageHandlerImpl.class);
-        private LamportClock clock;
         private String nodeID;
         public ConcurrentSkipListSet<Message> messageQueue;
         public MessageHandlerImpl(String nodeID, ConcurrentSkipListSet<Message> messageQueue) {
-            this.clock = LamportClock.getClock();
             this.nodeID = nodeID;
             this.messageQueue = messageQueue;
         }
@@ -332,16 +332,14 @@ public class DataManagerImpl implements DataManager {
         }
 
         private Message processUnicastMessage(Message message) {
-            logger.info("Received message: " + message.getPayload() + " from: " + message.getNodeID() + " of type: " +
-                    message.getMessageType());
+            logger.info("Received message: " + message.getPayload() + " from: "
+                    + message.getNodeID());
 
-            MessageType type = message.getMessageType();
-
-            if (type.equals(MessageType.TRANSFER) || type.equals(MessageType.SYNC)) {
-                nonBlockingMessageProcessing(message);
+            if (message instanceof NonBlockingCall) {
+                queueMessage(message);
                 return null;
             } else {
-                return blockingMessageProcessing(message);
+                return processMessage(message);
             }
         }
 
@@ -353,7 +351,7 @@ public class DataManagerImpl implements DataManager {
                         + " from: " + message.getNodeID());
                 message.setId(message.getRelease());
 
-                nonBlockingMessageProcessing(message);
+                queueMessage(message);
 
                 messageQueue.remove(message);
                 logger.debug("Message queue size: " + messageQueue.size());
@@ -366,55 +364,11 @@ public class DataManagerImpl implements DataManager {
             int sendClock = clock.incrementAndGet();
             logger.debug("[pid:" + nodeID + "][clock:" + sendClock + "] Sending ack for message: "
                     + message.getId() + " to: " + message.getNodeID());
-            Message ack = new Message(new Payload<>("Ack"), nodeID, sendClock, true,
-                    message.getMessageType());
+            Message ack = new Message(new Payload<>("Ack"), nodeID, sendClock, true);
             ack.setAck(message.getId());
             return ack;
         }
 
-        private void nonBlockingMessageProcessing(Message message) {
-            logger.debug("Saving message for async process: " + message.toString());
-            try {
-                superNodeMsgQueue.put(message);
-            } catch (InterruptedException e) {
-                logger.error("Unable to access queue ", e);
-                throw new RuntimeException("Unable to access queue ", e);
-            }
-        }
 
-        private Message blockingMessageProcessing(Message message) {
-            logger.debug("Processing message: " + message.toString());
-
-            if (message.getMessageType() == MessageType.DATA_REQUEST) {
-                String topic = (String) message.getPayload().getContent();
-                logger.debug("Data request received for topic: " + topic);
-
-                byte[] data = database.getPostsDataByTopicByteArray(topic);
-
-                return new Message(new Payload<>(nodeID, data), nodeID, clock.get(), true,
-                        MessageType.DATA_RESPONSE);
-            } else if (message.getMessageType() == MessageType.TRANSFER_TOPICS) {
-                String newNodeId = (String) message.getPayload().getContent();
-
-                Map<String, Set<String>> transferTopics = getTransferTopics(newNodeId);
-
-                Set<String> delete = transferTopics.get("delete");
-                try {
-                    if (!delete.isEmpty()) {
-                        superNodeMsgQueue.put(new Message(new Payload<>(delete), myNodeID, clock.get(),
-                                true, MessageType.DELETE_TOPICS));
-                    }
-                } catch (InterruptedException e) {
-                    throw new RuntimeException("Unable to access the queue", e);
-                }
-
-                Set<String> transfer = transferTopics.get("transfer");
-
-                return new Message(new Payload<>(transfer), myNodeID, clock.get(), true,
-                        MessageType.SYNC);
-            } else {
-                throw new RuntimeException("Unknown message type for sync process: " + message);
-            }
-        }
     }
 }
