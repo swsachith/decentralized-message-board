@@ -1,6 +1,7 @@
 package iu.e510.message.board.db;
 
 
+import iu.e510.message.board.cluster.Hash;
 import iu.e510.message.board.db.model.DMBReply;
 import iu.e510.message.board.db.model.DMBPost;
 import org.json.JSONArray;
@@ -304,6 +305,10 @@ public class DMBDatabaseImpl implements DMBDatabase {
      */
     @Override
     public void addPostData(String pTitle, String pTopic, String pOwner, String pDescription) {
+//        todo: add a hash
+//        Hash kush = new Hash();
+//        int hash = kush.getHash(pTitle + pTopic);
+
         int randomID = ThreadLocalRandom.current().nextInt(10000, 1000000);
         try {
             String sql = "INSERT INTO " + DMB_POSTS_TABLE + " (" +

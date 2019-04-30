@@ -84,6 +84,7 @@ public class ClientAPIImpl extends UnicastRemoteObject implements ClientAPI {
     @Override
     public List<DMBPost> getPosts(String clientID, String topic) throws RemoteException{
         try {
+            logger.info(dataManager.getPosts(clientID, topic).toString());
             return dataManager.getPosts(clientID, topic);
         } catch (Exception e) {
             throw new RemoteException("Unable to get posts", e);

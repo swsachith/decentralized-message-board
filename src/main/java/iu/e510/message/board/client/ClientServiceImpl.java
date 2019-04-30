@@ -193,7 +193,7 @@ public class ClientServiceImpl implements ClientService {
                 }
             } catch (RemoteException e) {
                 serverConnectionRefresh();
-                logger.debug("Retrying a different super node");
+                logger.debug("Retrying a different super node " + e.getMessage());
             } finally {
                 i++;
             }

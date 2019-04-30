@@ -279,7 +279,7 @@ public class ClusterManager implements LeaderLatchListener {
      * @return
      * @throws Exception
      */
-    private HashSet<String> getLostNodeTopics(String nodePath) throws Exception {
+    private HashSet<String> getLostNodeTopics(String nodePath) throws Exception { // todo: handle empty
         HashSet<String> topics = SerializationUtils.deserialize(zkManager.getData(nodePath));
         zkManager.delete(nodePath);
         logger.info("Deleted data node for the lost node: " +

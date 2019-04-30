@@ -1,6 +1,8 @@
 package iu.e510.message.board.db.model;
 
-public class DMBReply {
+import java.io.Serializable;
+
+public class DMBReply implements Serializable {
     private int mReplyId;
     private int mPostId;
     private String mReplyOwner;
