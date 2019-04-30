@@ -168,7 +168,14 @@ public class ClientServiceImpl implements ClientService {
                 // if the cache has a topic client mapping, use that. Else use the current clientAPI
                 ClientAPI topicClient = topicClientMap.get(topic);
                 if (topicClient != null) {
-                    results = topicClient.getPosts(clientID, topic);
+                    try {
+                        results = topicClient.getPosts(clientID, topic);
+                    } catch (RemoteException e) {
+                        logger.debug("Cache miss for the topic: " + topic);
+                    }
+                    if (!results.isEmpty()) {
+                        return results;
+                    }
                 } else {
                     Set<String> nodes = clientAPI.getNodes(topic);
                     if (nodes != null) {
@@ -182,7 +189,7 @@ public class ClientServiceImpl implements ClientService {
                         }
                     }
                 }
-            } catch (Exception e) {
+            } catch (RemoteException e) {
                 serverConnectionRefresh();
                 logger.debug("Retrying a different super node");
             } finally {
