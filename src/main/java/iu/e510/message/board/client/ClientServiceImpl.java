@@ -93,7 +93,7 @@ public class ClientServiceImpl implements ClientService {
                         new Object[]{clientID, topic, title, content});
             } catch (Exception e) {
                 serverConnectionRefresh();
-                logger.error("Retrying a different super node", e);
+                logger.debug("Retrying a different super node", e);
             } finally {
                 i++;
             }
@@ -136,7 +136,7 @@ public class ClientServiceImpl implements ClientService {
                         new Object[]{clientID, topic, postID, content});
             } catch (Exception e) {
                 serverConnectionRefresh();
-                logger.debug("Retrying a different super node");
+                logger.debug("Retrying a different super node", e);
             } finally {
                 i++;
             }
