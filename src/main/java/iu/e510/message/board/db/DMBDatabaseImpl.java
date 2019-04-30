@@ -430,7 +430,9 @@ public class DMBDatabaseImpl implements DMBDatabase {
                         " WHERE " + DMB_POST_ID_COLUMN + " = ? LIMIT 1";
 
                 PreparedStatement statement = connection.prepareStatement(selectPostsByTopicQuery);
+                statement.setInt(1, pId);
                 ResultSet resultSet = statement.executeQuery();
+                resultSet.next();
                 post.setPostId(resultSet.getInt(DMB_POST_ID_COLUMN));
                 post.setPostOwnerId(resultSet.getString(DMB_POST_OWNER_COLUMN));
                 post.setPostTitle(resultSet.getString(DMB_POST_TITLE_COLUMN));

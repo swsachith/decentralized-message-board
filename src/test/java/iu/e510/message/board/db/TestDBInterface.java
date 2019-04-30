@@ -17,6 +17,13 @@ public class TestDBInterface {
     }
 
     @Test
+    public void testGetPostByIdBeforeNoPosts() {
+        int id = 2123123;
+        DMBPost post = db.getPostDataByPostId(id);
+        Assert.assertNull(post);
+    }
+
+    @Test (dependsOnMethods = { "testGetPostByIdBeforeNoPosts" })
     public void testAddPost() {
         db.addPostData("Hello Bloomington", "Bloomington", "postowner1", "hello world!");
         ArrayList<DMBPost> posts = db.getPostsDataArrayList();
@@ -31,6 +38,15 @@ public class TestDBInterface {
     }
 
     @Test (dependsOnMethods = { "testGetAllPosts" })
+    public void testGetPostById() {
+        ArrayList<DMBPost> posts = db.getPostsDataArrayList();
+        int id = posts.get(0).getPostId();
+        DMBPost post = db.getPostDataByPostId(id);
+        Assert.assertEquals(post.getPostId(), id);
+    }
+
+
+    @Test (dependsOnMethods = { "testGetPostById" })
     public void testAddReply() {
         ArrayList<DMBPost> posts = db.getPostsDataArrayList();
         db.addReplyData(posts.get(0).getPostId(), "replyowner1", "Welcome to Bloomington!");
