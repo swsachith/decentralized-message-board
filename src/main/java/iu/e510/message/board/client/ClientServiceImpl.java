@@ -86,11 +86,11 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public boolean post(String topic, String title, String content) {
         topic = topic.toLowerCase().trim();
-        boolean success = false;
         int i = 0;
         while (i < serverRetries) {
             try {
-                success = handleClientRequestRecursively(ClientAPIMethodsEnum.POST, new Object[]{clientID, topic, title, content});
+                return handleClientRequestRecursively(ClientAPIMethodsEnum.POST,
+                        new Object[]{clientID, topic, title, content});
             } catch (Exception e) {
                 serverConnectionRefresh();
                 logger.error("Retrying a different super node", e);
@@ -98,7 +98,7 @@ public class ClientServiceImpl implements ClientService {
                 i++;
             }
         }
-        return success;
+        return false;
     }
 
     private Method getMethod(ClientAPIMethodsEnum methodEnum) throws NoSuchMethodException {
@@ -129,11 +129,11 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public boolean replyPost(String topic, int postID, String content) {
         topic = topic.toLowerCase().trim();
-        boolean success = false;
         int i = 0;
         while (i < serverRetries) {
             try {
-                success = handleClientRequestRecursively(ClientAPIMethodsEnum.REPLY, new Object[]{clientID, topic, postID, content});
+                return handleClientRequestRecursively(ClientAPIMethodsEnum.REPLY,
+                        new Object[]{clientID, topic, postID, content});
             } catch (Exception e) {
                 serverConnectionRefresh();
                 logger.debug("Retrying a different super node");
@@ -141,7 +141,7 @@ public class ClientServiceImpl implements ClientService {
                 i++;
             }
         }
-        return success;
+        return false;
     }
 
     @Override
