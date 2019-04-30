@@ -1,6 +1,7 @@
 package iu.e510.message.board.db.model;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 
 public class DMBReply implements Serializable {
     private int mReplyId;
@@ -65,5 +66,16 @@ public class DMBReply implements Serializable {
 
     public void setReplyTimeStamp(long mReplyTimeStamp) {
         this.mReplyTimeStamp = mReplyTimeStamp;
+    }
+
+    @Override
+    public String toString() {
+        Timestamp ts = new Timestamp(mReplyTimeStamp);
+        return "id: " + mReplyId +
+                ", by: '" + mReplyOwner + '\'' +
+                "\n\t\t" + mReplyDescription +
+                ", upvotes: " + mReplyUpVotes +
+                ", downvotes: " + mReplyDownVotes +
+                ", time: " + ts;
     }
 }

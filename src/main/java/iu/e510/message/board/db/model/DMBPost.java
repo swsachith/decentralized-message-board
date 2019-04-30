@@ -1,6 +1,7 @@
 package iu.e510.message.board.db.model;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 
 public class DMBPost implements Serializable {
@@ -14,7 +15,8 @@ public class DMBPost implements Serializable {
     private int mPostUpvotes;
     private int mPostDownvotes;
 
-    public DMBPost(){}
+    public DMBPost() {
+    }
 
     public DMBPost(String mPostOwnerId, String mPostTopic, String mPostTitle, String mPostDescription) {
         this.mPostOwnerId = mPostOwnerId;
@@ -98,16 +100,22 @@ public class DMBPost implements Serializable {
 
     @Override
     public String toString() {
-        return "DMBPost{" +
-                "mPostId=" + mPostId +
-                ", mPostOwnerId='" + mPostOwnerId + '\'' +
-                ", mPostTopic='" + mPostTopic + '\'' +
-                ", mPostTitle='" + mPostTitle + '\'' +
-                ", mPostDescription='" + mPostDescription + '\'' +
-                ", mPostReplies=" + mPostReplies +
-                ", mPostTimeStamp=" + mPostTimeStamp +
-                ", mPostUpvotes=" + mPostUpvotes +
-                ", mPostDownvotes=" + mPostDownvotes +
-                '}';
+        Timestamp ts = new Timestamp(mPostTimeStamp);
+        StringBuilder postString = new StringBuilder();
+        postString.append("Post{\n" +
+                "id: " + mPostId +
+                ", owner: '" + mPostOwnerId + '\'' +
+                ", topic: '" + mPostTopic + '\'' +
+                ", title: '" + mPostTitle + '\'' + "\n" +
+                "" + mPostDescription + "\n" +
+                "upvotes: " + mPostUpvotes +
+                ", downvotes: " + mPostDownvotes + "\n" +
+                "posted at: " + ts.toString() + "\n" +
+                "Replies: \n");
+        for (DMBReply mPostReply : mPostReplies ) {
+            postString.append("\t" + mPostReply.toString() + "\n");
+        }
+        postString.append("}");
+        return postString.toString();
     }
 }
