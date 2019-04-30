@@ -30,7 +30,7 @@ public class Main {
                 System.out.println("Wrong input format.");
                 continue;
             }
-            String method = tokens[0];
+            String method = tokens[0].trim().toLowerCase();
             processInput(clientService, tokens, method);
         }
         scanner.close();
@@ -40,20 +40,41 @@ public class Main {
         boolean successful = false;
         switch (method) {
             case "post":
-                successful = clientService.post(tokens[1].trim(), tokens[2].trim(), tokens[3].trim());
+                successful = clientService.post(tokens[1].trim().toLowerCase(), tokens[2].trim(), tokens[3].trim());
                 break;
             case "reply":
-                successful = clientService.replyPost(tokens[1].trim(), Integer.parseInt(tokens[2].trim()), tokens[3].trim());
+                successful = clientService.replyPost(tokens[1].trim().toLowerCase(), Integer.parseInt(tokens[2].trim()), tokens[3].trim());
+                break;
+            case "uppost":
+                successful = clientService.upvotePost(tokens[1].trim().toLowerCase(), Integer.parseInt(tokens[2].trim()));
+                break;
+            case "downpost":
+                successful = clientService.downvotePost(tokens[1].trim().toLowerCase(), Integer.parseInt(tokens[2].trim()));
+                break;
+            case "upreply":
+                successful = clientService.upvoteReply(tokens[1].trim().toLowerCase(), Integer.parseInt(tokens[2].trim()), Integer.parseInt(tokens[3].trim()));
+                break;
+           case "downreply":
+                successful = clientService.downvoteReply(tokens[1].trim().toLowerCase(), Integer.parseInt(tokens[2].trim()), Integer.parseInt(tokens[3].trim()));
                 break;
             case "getposts":
-                List<DMBPost> posts = clientService.getPosts(tokens[1].trim());
+                List<DMBPost> posts = clientService.getPosts(tokens[1].trim().toLowerCase());
                 for (DMBPost post : posts) {
                     System.out.println(post);
                 }
+                break;
+            case "getpost":
+                DMBPost post = clientService.getPost(tokens[1].trim().toLowerCase(), Integer.parseInt(tokens[2].trim()));
+                if (post != null) {
+                    System.out.println(post);
+                } else {
+                    System.out.println("No such post found!");
+                }
+                break;
             default:
                 break;
         }
-        if (!method.equals("getposts")) {
+        if (!(method.equals("getposts") || method.equals("getpost"))) {
             if (successful) {
                 System.out.println("The request was successfully executed");
             } else {

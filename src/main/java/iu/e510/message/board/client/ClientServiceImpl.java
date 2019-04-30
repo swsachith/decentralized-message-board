@@ -41,121 +41,74 @@ public class ClientServiceImpl implements ClientService {
         }
     }
 
-    /**
-     * Returns a working Supernode RMI object from the provided Super node list.
-     *
-     * @return
-     */
-    private ClientAPI getWorkingClientAPI() {
-        ClientAPI clientAPI;
-        for (String superNode : superNodeList) {
-            if (superNode.equals(currentSuperNode)) {
-                continue;
-            }
-            logger.info("Trying to connect to: " + superNode);
-            try {
-                clientAPI = (ClientAPI) registry.lookup(superNode);
-                currentSuperNode = superNode;
-                logger.info("Connected to Super Node: " + superNode);
-                return clientAPI;
-            } catch (Exception e) {
-                logger.info(superNode + " cannot be reached. Hence trying the next node");
-            }
-        }
-        throw new RuntimeException("Cannot connect to any of the supernodes. Please verify the list");
-    }
-
-    /**
-     * If a server is not reachable, then updates and points to a working server in the given list.
-     */
-    private void serverConnectionRefresh() {
-        logger.error("Server connection refreshing");
-        clientAPI = getWorkingClientAPI();
-    }
-
-    /**
-     * Reads the list of super nodes from the configs and return an ArrayList
-     *
-     * @return
-     */
-    private List<String> getSuperNodeList() {
-        String superNodes = this.config.getConfig(Constants.SUPER_NODE_LIST);
-        return Arrays.asList(superNodes.split(","));
-    }
-
     @Override
     public boolean post(String topic, String title, String content) {
-        topic = topic.toLowerCase().trim();
-        int i = 0;
-        while (i < serverRetries) {
-            try {
-                return handleClientRequestRecursively(ClientAPIMethodsEnum.POST,
-                        new Object[]{clientID, topic, title, content});
-            } catch (Exception e) {
-                serverConnectionRefresh();
-                logger.debug("Retrying a different super node", e);
-            } finally {
-                i++;
-            }
-        }
-        return false;
-    }
-
-    private Method getMethod(ClientAPIMethodsEnum methodEnum) throws NoSuchMethodException {
-        Method method = null;
-        switch (methodEnum) {
-            case POST:
-                method = ClientAPI.class.getMethod("post", String.class, String.class, String.class, String.class);
-                break;
-            case REPLY:
-                method = ClientAPI.class.getMethod("replyPost", String.class, String.class, int.class, String.class);
-                break;
-            default:
-                break;
-        }
-        return method;
+        return recursiveRequest(ClientAPIMethodsEnum.POST, new Object[]{clientID, topic, title, content});
     }
 
     @Override
     public boolean upvotePost(String topic, int postID) {
-        return false;
+        return recursiveRequest(ClientAPIMethodsEnum.UPVOTE, new Object[]{clientID, topic, postID});
     }
 
     @Override
     public boolean downvotePost(String topic, int postID) {
-        return false;
+        return recursiveRequest(ClientAPIMethodsEnum.DOWNVOTE, new Object[]{clientID, topic, postID});
     }
 
     @Override
     public boolean replyPost(String topic, int postID, String content) {
-        topic = topic.toLowerCase().trim();
-        int i = 0;
-        while (i < serverRetries) {
-            try {
-                return handleClientRequestRecursively(ClientAPIMethodsEnum.REPLY,
-                        new Object[]{clientID, topic, postID, content});
-            } catch (Exception e) {
-                serverConnectionRefresh();
-                logger.debug("Retrying a different super node", e);
-            } finally {
-                i++;
-            }
-        }
-        return false;
+        return recursiveRequest(ClientAPIMethodsEnum.REPLY, new Object[]{clientID, topic, postID, content});
     }
 
     @Override
     public boolean upvoteReply(String topic, int postID, int replyID) {
-        return false;
+        return recursiveRequest(ClientAPIMethodsEnum.UPVOTE_REPLY, new Object[]{clientID, topic, postID, replyID});
     }
 
     @Override
     public boolean downvoteReply(String topic, int postID, int replyID) {
-        return false;
+        return recursiveRequest(ClientAPIMethodsEnum.DOWNVOTE_REPLY, new Object[]{clientID, topic, postID, replyID});
     }
 
     @Override
     public DMBPost getPost(String topic, int postID) {
+        DMBPost post;
+        int i = 0;
+        while (i < serverRetries) {
+            try {
+                // if the cache has a topic client mapping, use that. Else use the current clientAPI
+                ClientAPI topicClient = topicClientMap.get(topic);
+                if (topicClient != null) {
+                    try {
+                        post = topicClient.getPost(clientID, topic, postID);
+                        if (post != null) {
+                            return post;
+                        }
+                    } catch (RemoteException e) {
+                        logger.debug("Cache miss for the topic: " + topic);
+                        topicClientMap.remove(topic);
+                    }
+                } else {
+                    Set<String> nodes = clientAPI.getNodes(topic);
+                    if (nodes != null) {
+                        topicClientMap.remove(topic);
+                        // if the contacted node does not have that topic, retry with the retry list.
+                        ClientAPI topicClientAPI = getClientAPI(nodes);
+                        post = topicClientAPI.getPost(clientID, topic, postID);
+                        if (post != null) {
+                            topicClientMap.put(topic, topicClientAPI);
+                            return post;
+                        }
+                    }
+                }
+            } catch (RemoteException e) {
+                serverConnectionRefresh();
+                logger.debug("Retrying a different super node " + e.getMessage());
+            } finally {
+                i++;
+            }
+        }
         return null;
     }
 
@@ -201,30 +154,7 @@ public class ClientServiceImpl implements ClientService {
         return results;
     }
 
-    /**
-     * Returns a reference to a random working super node in the hash ring for a given client list.
-     *
-     * @param clientIDSet
-     * @return
-     */
-    private ClientAPI getClientAPI(Set<String> clientIDSet) {
-        ClientAPI clientAPI;
-        // shuffling to get a random super node
-        List<String> clientIDList = new ArrayList<>(clientIDSet);
-        Collections.shuffle(clientIDList, new Random());
-        for (String clientID : clientIDList) {
-            logger.debug("Trying to connect to: " + clientID);
-            try {
-                clientAPI = (ClientAPI) registry.lookup(clientID);
-                return clientAPI;
-            } catch (Exception e) {
-                logger.info(clientID + " cannot be reached. Hence trying the next node");
-            }
-        }
-        throw new RuntimeException("Cannot connect to any of the super nodes.");
-    }
-
-    private boolean handleClientRequestRecursively(ClientAPIMethodsEnum methodName, Object[] parameters) throws Exception {
+    private boolean handleClientRequest(ClientAPIMethodsEnum methodName, Object[] parameters) throws Exception {
         Method method;
         Set<String> results = null;
         try {
@@ -252,6 +182,7 @@ public class ClientServiceImpl implements ClientService {
                     Set<String> newResult =
                             (Set<String>) method.invoke(topicClientAPI, parameters);
                     if (newResult.isEmpty()) {
+                        logger.debug("Updating the cache for the topic: " + topic);
                         topicClientMap.put(topic, topicClientAPI);
                         return true;
                     }
@@ -259,6 +190,122 @@ public class ClientServiceImpl implements ClientService {
             }
         } catch (Exception e) {
             throw new Exception("Cannot connect to the client", e);
+        }
+        return false;
+    }
+
+    /**
+     * Returns a working Supernode RMI object from the provided Super node list.
+     *
+     * @return
+     */
+    private ClientAPI getWorkingClientAPI() {
+        ClientAPI clientAPI;
+        for (String superNode : superNodeList) {
+            if (superNode.equals(currentSuperNode)) {
+                continue;
+            }
+            logger.info("Trying to connect to: " + superNode);
+            try {
+                clientAPI = (ClientAPI) registry.lookup(superNode);
+                currentSuperNode = superNode;
+                logger.info("Connected to Super Node: " + superNode);
+                return clientAPI;
+            } catch (Exception e) {
+                logger.info(superNode + " cannot be reached. Hence trying the next node");
+            }
+        }
+        throw new RuntimeException("Cannot connect to any of the supernodes. Please verify the list");
+    }
+
+    /**
+     * If a server is not reachable, then updates and points to a working server in the given list.
+     */
+    private void serverConnectionRefresh() {
+        logger.error("Server connection refreshing");
+        clientAPI = getWorkingClientAPI();
+    }
+
+    /**
+     * Reads the list of super nodes from the configs and return an ArrayList
+     *
+     * @return
+     */
+    private List<String> getSuperNodeList() {
+        String superNodes = this.config.getConfig(Constants.SUPER_NODE_LIST);
+        return Arrays.asList(superNodes.split(","));
+    }
+
+    private Method getMethod(ClientAPIMethodsEnum methodEnum) throws NoSuchMethodException {
+        Method method = null;
+        switch (methodEnum) {
+            case POST:
+                method = ClientAPI.class.getMethod("post", String.class, String.class, String.class, String.class);
+                break;
+            case REPLY:
+                method = ClientAPI.class.getMethod("replyPost", String.class, String.class, int.class, String.class);
+                break;
+            case UPVOTE:
+                method = ClientAPI.class.getMethod("upvotePost", String.class, String.class, int.class);
+                break;
+            case DOWNVOTE:
+                method = ClientAPI.class.getMethod("downvotePost", String.class, String.class, int.class);
+                break;
+            case UPVOTE_REPLY:
+                method = ClientAPI.class.getMethod("upvoteReply", String.class, String.class, int.class, int.class);
+                break;
+            case DOWNVOTE_REPLY:
+                method = ClientAPI.class.getMethod("downvoteReply", String.class, String.class, int.class, int.class);
+                break;
+            default:
+                break;
+        }
+        return method;
+    }
+
+    /**
+     * Returns a reference to a random working super node in the hash ring for a given client list.
+     *
+     * @param clientIDSet
+     * @return
+     */
+    private ClientAPI getClientAPI(Set<String> clientIDSet) {
+        ClientAPI clientAPI;
+        // shuffling to get a random super node
+        List<String> clientIDList = new ArrayList<>(clientIDSet);
+        Collections.shuffle(clientIDList, new Random());
+        for (String clientID : clientIDList) {
+            logger.debug("Trying to connect to: " + clientID);
+            try {
+                clientAPI = (ClientAPI) registry.lookup(clientID);
+                return clientAPI;
+            } catch (Exception e) {
+                logger.info(clientID + " cannot be reached. Hence trying the next node");
+            }
+        }
+        throw new RuntimeException("Cannot connect to any of the super nodes.");
+    }
+
+    /**
+     * Recursively tries the supernodes.
+     * First tries to access the cache.
+     * If cache miss, it accesses the main client super node
+     * Then if that doesn't have the data, tries one that does using the reply from the main supernode
+     * @param methodEnum
+     * @param parameters
+     * @return
+     */
+    private boolean recursiveRequest(ClientAPIMethodsEnum methodEnum, Object[] parameters) {
+        int i = 0;
+        while (i < serverRetries) {
+            try {
+                return handleClientRequest(methodEnum, parameters);
+            } catch (Exception e) {
+                serverConnectionRefresh();
+                logger.debug("Retrying a different super node", e);
+            } finally {
+                i++;
+            }
         }
         return false;
     }
