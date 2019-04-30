@@ -38,32 +38,65 @@ public class Main {
 
     private static void processInput(ClientService clientService, String[] tokens, String method) {
         boolean successful = false;
+        boolean wrongFormat = false;
         switch (method) {
             case "post":
+                if (tokens.length != 4) {
+                    wrongFormat = true;
+                    break;
+                }
                 successful = clientService.post(tokens[1].trim().toLowerCase(), tokens[2].trim(), tokens[3].trim());
                 break;
             case "reply":
+                if (tokens.length != 4) {
+                    wrongFormat = true;
+                    break;
+                }
                 successful = clientService.replyPost(tokens[1].trim().toLowerCase(), Integer.parseInt(tokens[2].trim()), tokens[3].trim());
                 break;
             case "uppost":
+                if (tokens.length != 3) {
+                    wrongFormat = true;
+                    break;
+                }
                 successful = clientService.upvotePost(tokens[1].trim().toLowerCase(), Integer.parseInt(tokens[2].trim()));
                 break;
             case "downpost":
+                if (tokens.length != 3) {
+                    wrongFormat = true;
+                    break;
+                }
                 successful = clientService.downvotePost(tokens[1].trim().toLowerCase(), Integer.parseInt(tokens[2].trim()));
                 break;
             case "upreply":
+                if (tokens.length != 4) {
+                    wrongFormat = true;
+                    break;
+                }
                 successful = clientService.upvoteReply(tokens[1].trim().toLowerCase(), Integer.parseInt(tokens[2].trim()), Integer.parseInt(tokens[3].trim()));
                 break;
            case "downreply":
+               if (tokens.length != 4) {
+                   wrongFormat = true;
+                   break;
+               }
                 successful = clientService.downvoteReply(tokens[1].trim().toLowerCase(), Integer.parseInt(tokens[2].trim()), Integer.parseInt(tokens[3].trim()));
                 break;
             case "getposts":
+                if (tokens.length != 2) {
+                    wrongFormat = true;
+                    break;
+                }
                 List<DMBPost> posts = clientService.getPosts(tokens[1].trim().toLowerCase());
                 for (DMBPost post : posts) {
                     System.out.println(post);
                 }
                 break;
             case "getpost":
+                if (tokens.length != 3) {
+                    wrongFormat = true;
+                    break;
+                }
                 DMBPost post = clientService.getPost(tokens[1].trim().toLowerCase(), Integer.parseInt(tokens[2].trim()));
                 if (post != null) {
                     System.out.println(post);
@@ -80,6 +113,9 @@ public class Main {
             } else {
                 System.out.println("Posting failed. Please try again");
             }
+        }
+        if (wrongFormat) {
+            System.out.println("The input is in a wrong format. Please try again.");
         }
     }
 }
