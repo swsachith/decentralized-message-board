@@ -22,6 +22,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
 
 
     private Connection connection;
+    private Hash hash;
 
     /**
      * constructor for the database class, create database and tables
@@ -29,6 +30,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
     public DMBDatabaseImpl(String nodeID) {
         DBService dbService = new DBService(nodeID);
         connection = dbService.getConnection();
+        hash = new Hash();
         createTables();
     }
 
@@ -305,11 +307,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
      */
     @Override
     public void addPostData(String pTitle, String pTopic, String pOwner, String pDescription) {
-//        todo: add a hash
-//        Hash kush = new Hash();
-//        int hash = kush.getHash(pTitle + pTopic);
-
-        int randomID = ThreadLocalRandom.current().nextInt(10000, 1000000);
+        int postIDHash = hash.getHash(pTitle + pTopic + pOwner);
         try {
             String sql = "INSERT INTO " + DMB_POSTS_TABLE + " (" +
                     DMB_POST_ID_COLUMN + ", " +
@@ -320,7 +318,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
                     DMB_POST_CREATED_COLUMN + ") VALUES(?, ?, ?, ?, ?, ?)";
 
             PreparedStatement pstmt = connection.prepareStatement(sql);
-            pstmt.setInt(1, randomID);
+            pstmt.setInt(1, postIDHash);
             pstmt.setString(2, pTitle);
             pstmt.setString(3, pTopic);
             pstmt.setString(4, pOwner);
@@ -481,7 +479,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
      */
     @Override
     public void addReplyData(int pId, String rOwner, String rDescription) {
-        int randomID = ThreadLocalRandom.current().nextInt(10000, 1000000);
+        int replyHashID = hash.getHash(pId + rOwner);
         try {
 
             String sql = "INSERT INTO " + DMB_REPLIES_TABLE + " (" +
@@ -493,7 +491,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
 
             PreparedStatement pstmt = connection.prepareStatement(sql);
             pstmt.setInt(1, pId);
-            pstmt.setInt(2, randomID);
+            pstmt.setInt(2, replyHashID);
             pstmt.setString(3, rOwner);
             pstmt.setString(4, rDescription);
             pstmt.setTimestamp(5, new Timestamp(System.currentTimeMillis()));
