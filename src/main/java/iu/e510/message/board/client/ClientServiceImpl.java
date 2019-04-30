@@ -22,10 +22,12 @@ public class ClientServiceImpl implements ClientService {
     private String clientID;
     private Map<String, ClientAPI> topicClientMap;
     private int serverRetries;
+    private String currentSuperNode;
 
     public ClientServiceImpl(String clientID) {
         this.clientID = clientID;
         this.config = new Config();
+        this.currentSuperNode = "";
         String RMI_HOST = config.getConfig(Constants.RMI_REGISTRY_HOST);
         int RMI_PORT = Integer.parseInt(config.getConfig(Constants.RMI_REGISTRY_PORT));
         this.serverRetries = Integer.parseInt(config.getConfig(Constants.SUPER_NODE_RETRIES));
@@ -47,9 +49,13 @@ public class ClientServiceImpl implements ClientService {
     private ClientAPI getWorkingClientAPI() {
         ClientAPI clientAPI;
         for (String superNode : superNodeList) {
+            if (superNode.equals(currentSuperNode)) {
+                continue;
+            }
             logger.info("Trying to connect to: " + superNode);
             try {
                 clientAPI = (ClientAPI) registry.lookup(superNode);
+                currentSuperNode = superNode;
                 logger.info("Connected to Super Node: " + superNode);
                 return clientAPI;
             } catch (Exception e) {
@@ -87,7 +93,7 @@ public class ClientServiceImpl implements ClientService {
                 success = handleClientRequestRecursively(ClientAPIMethodsEnum.POST, new Object[]{clientID, topic, title, content});
             } catch (Exception e) {
                 serverConnectionRefresh();
-                logger.debug("Retrying a different super node");
+                logger.error("Retrying a different super node", e);
             } finally {
                 i++;
             }
@@ -238,7 +244,7 @@ public class ClientServiceImpl implements ClientService {
                 }
             }
         } catch (Exception e) {
-            throw new Exception("Cannot connect to the client");
+            throw new Exception("Cannot connect to the client", e);
         }
         return false;
     }

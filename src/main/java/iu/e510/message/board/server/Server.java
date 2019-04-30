@@ -54,7 +54,7 @@ public class Server {
         int RMI_PORT = Integer.parseInt(config.getConfig(Constants.RMI_REGISTRY_PORT));
         configRMIRegistry(RMI_HOST, RMI_PORT);
         ClientAPI clientAPI = new ClientAPIImpl(nodeID, dataManager);
-        Naming.bind("//" + RMI_HOST + ":" + RMI_PORT + "/" + nodeID, clientAPI);
+        Naming.rebind("//" + RMI_HOST + ":" + RMI_PORT + "/" + nodeID, clientAPI);
         logger.info("The client api is ready to accept requests");
     }
 
