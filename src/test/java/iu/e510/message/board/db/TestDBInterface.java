@@ -59,7 +59,15 @@ public class TestDBInterface {
         Assert.assertEquals(replies2.get(0).getReplyOwner(), "replyowner2");
     }
 
-    @Test (dependsOnMethods = { "testAddReply"})
+    @Test (dependsOnMethods = { "testAddReply" })
+    public void testAddMultipleReplies() {
+        ArrayList<DMBPost> posts = db.getPostsDataArrayList();
+        db.addReplyData(posts.get(0).getPostId(), "tempUser", "This is the second reply");
+        DMBPost postDataByPostId = db.getPostDataByPostId(posts.get(0).getPostId());
+        Assert.assertEquals(postDataByPostId.getPostReplies().size(), 2);
+    }
+
+    @Test (dependsOnMethods = { "testAddMultipleReplies"})
     public void testAddUpVoteToPost(){
         ArrayList<DMBPost> posts = db.getPostsDataArrayList();
         Assert.assertEquals(posts.get(0).getPostUpvotes(), 0);

@@ -481,7 +481,7 @@ public class DMBDatabaseImpl implements DMBDatabase {
      */
     @Override
     public void addReplyData(int pId, String rOwner, String rDescription) {
-        int replyHashID = hash.getHash(pId + rOwner);
+        int replyHashID = hash.getHash(pId + rOwner + rDescription);
         try {
 
             String sql = "INSERT INTO " + DMB_REPLIES_TABLE + " (" +

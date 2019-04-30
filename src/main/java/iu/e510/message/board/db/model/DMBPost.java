@@ -103,14 +103,29 @@ public class DMBPost implements Serializable {
         Timestamp ts = new Timestamp(mPostTimeStamp);
         StringBuilder postString = new StringBuilder();
         postString.append("Post{\n" +
-                "id: " + mPostId +
+                "\tid: " + mPostId +
                 ", owner: '" + mPostOwnerId + '\'' +
                 ", topic: '" + mPostTopic + '\'' +
                 ", title: '" + mPostTitle + '\'' + "\n" +
-                "" + mPostDescription + "\n" +
-                "upvotes: " + mPostUpvotes +
+                "\t" + mPostDescription + "\n" +
+                "\tupvotes: " + mPostUpvotes +
                 ", downvotes: " + mPostDownvotes + "\n" +
-                "posted at: " + ts.toString() + "\n" +
+                "\tposted at: " + ts.toString() + "\n}");
+        return postString.toString();
+    }
+
+    public String getFullPostString() {
+        Timestamp ts = new Timestamp(mPostTimeStamp);
+        StringBuilder postString = new StringBuilder();
+        postString.append("Post{\n" +
+                "\tid: " + mPostId +
+                ", owner: '" + mPostOwnerId + '\'' +
+                ", topic: '" + mPostTopic + '\'' +
+                ", title: '" + mPostTitle + '\'' + "\n" +
+                "\t" + mPostDescription + "\n" +
+                "\tupvotes: " + mPostUpvotes +
+                ", downvotes: " + mPostDownvotes + "\n" +
+                "\tposted at: " + ts.toString() + "\n" +
                 "Replies: \n");
         for (DMBReply mPostReply : mPostReplies ) {
             postString.append("\t" + mPostReply.toString() + "\n");
