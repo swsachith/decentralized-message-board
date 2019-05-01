@@ -8,7 +8,7 @@ import iu.e510.message.board.db.DMBDatabaseImpl;
 import iu.e510.message.board.tom.MessageService;
 import iu.e510.message.board.tom.MessageServiceImpl;
 import iu.e510.message.board.tom.common.Message;
-import iu.e510.message.board.tom.common.NonBlockingPayload;
+import iu.e510.message.board.tom.common.payloads.NonBlockingPayload;
 import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
 import org.slf4j.Logger;

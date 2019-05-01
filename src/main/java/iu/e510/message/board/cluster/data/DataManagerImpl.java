@@ -9,7 +9,11 @@ import iu.e510.message.board.cluster.zk.ZKManagerImpl;
 import iu.e510.message.board.db.DMBDatabase;
 import iu.e510.message.board.db.model.DMBPost;
 import iu.e510.message.board.tom.MessageService;
-import iu.e510.message.board.tom.common.*;
+import iu.e510.message.board.tom.common.LamportClock;
+import iu.e510.message.board.tom.common.Message;
+import iu.e510.message.board.tom.common.payloads.BlockingPayload;
+import iu.e510.message.board.tom.common.payloads.NonBlockingPayload;
+import iu.e510.message.board.tom.common.payloads.Payload;
 import iu.e510.message.board.tom.core.MessageHandler;
 import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
@@ -131,7 +135,6 @@ public class DataManagerImpl implements DataManager {
 
             logger.debug("Received data: " + response.getPayload().getContent().toString());
 
-
             if (response != null) return (byte[]) response.getPayload().getContent();
         }
 
@@ -161,7 +164,7 @@ public class DataManagerImpl implements DataManager {
     }
 
     @Override
-    public void setConsistent(boolean consistency) {
+    public void setConsistency(boolean consistency) {
         this.consistent.set(consistency);
     }
 
@@ -209,18 +212,26 @@ public class DataManagerImpl implements DataManager {
     }
 
     @Override
-    public DMBPost getPost(String clientID, String topic, int postID) {
-        return database.getPostDataByPostId(postID);
+    public DMBPost getPost(String clientID, String topic, int postID) throws Exception {
+        if (isConsistent()) {
+            return database.getPostDataByPostId(postID);
+        } else {
+            throw new Exception("Server is inconsistent. Unable to serve getPost request!");
+        }
     }
 
     @Override
-    public List<DMBPost> getPosts(String clientID, String topic) {
-        return database.getPostsDataByTopicArrayList(topic);
+    public List<DMBPost> getPosts(String clientID, String topic) throws Exception {
+        if (isConsistent()) {
+            return database.getPostsDataByTopicArrayList(topic);
+        } else {
+            throw new Exception("Server is inconsistent. Unable to serve getPosts request!");
+        }
     }
 
 
     /**
-     * Synchronous/ blocking processing of a message
+     * Synchronous/ blocking processing of a payload
      */
     @Override
     public Message processPayload(BlockingPayload payload) {
@@ -229,6 +240,9 @@ public class DataManagerImpl implements DataManager {
         return payload.process(this);
     }
 
+    /**
+     * Asynchronous/ non-blocking processing of a payload
+     */
     @Override
     public void queuePayload(NonBlockingPayload payload) {
         logger.debug("Saving message for async process: " + payload);
@@ -277,11 +291,11 @@ public class DataManagerImpl implements DataManager {
             while (running) {
                 try {
                     NonBlockingPayload payload = superNodeMsgQueue.take();
-                    setConsistent(false);
+                    setConsistency(false);
 
                     payload.process(dataManager);
 
-                    setConsistent(true);
+                    setConsistency(true);
 
                 } catch (InterruptedException e) {
                     logger.error("Unable to access the queue: ", e);
@@ -333,11 +347,6 @@ public class DataManagerImpl implements DataManager {
 
             if (payload instanceof NonBlockingPayload) {
                 queuePayload((NonBlockingPayload) payload);
-                return null;
-            } else if (type.equals(MessageType.LOST_CONNECTION)) {
-                //todo handle this, set inconsistent
-                setConsistent(false);
-                logger.info("Lost connection with Zookeeper, Network partitioned. Hence becoming inconsistent until connection");
                 return null;
             } else {
                 return processPayload((BlockingPayload) payload);

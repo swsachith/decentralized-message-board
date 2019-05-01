@@ -1,5 +1,7 @@
 package iu.e510.message.board.tom.common;
 
+import iu.e510.message.board.tom.common.payloads.Payload;
+
 import java.io.Serializable;
 import java.util.*;
 

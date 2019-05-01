@@ -1,9 +1,9 @@
 package iu.e510.message.board.cluster.data.payloads;
 
 import iu.e510.message.board.cluster.data.DataManager;
-import iu.e510.message.board.tom.common.BlockingPayload;
+import iu.e510.message.board.tom.common.payloads.BlockingPayload;
 import iu.e510.message.board.tom.common.Message;
-import iu.e510.message.board.tom.common.Payload;
+import iu.e510.message.board.tom.common.payloads.Payload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +35,7 @@ public class TransferTopicsPayload extends Payload<String> implements BlockingPa
 
         Set<String> transfer = transferTopics.get("transfer");
 
-        logger.debug("Dransferring topics: " + transfer);
+        logger.debug("Transferring topics: " + transfer);
         return new Message(new SyncPayload(transfer), nodeId, timestamp, true);
     }
 

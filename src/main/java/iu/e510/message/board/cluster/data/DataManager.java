@@ -4,10 +4,9 @@ import iu.e510.message.board.cluster.data.beans.BaseBean;
 import iu.e510.message.board.db.DMBDatabase;
 import iu.e510.message.board.db.model.DMBPost;
 import iu.e510.message.board.tom.MessageService;
-import iu.e510.message.board.tom.common.BlockingPayload;
 import iu.e510.message.board.tom.common.Message;
-import iu.e510.message.board.tom.common.NonBlockingPayload;
-import iu.e510.message.board.tom.common.Payload;
+import iu.e510.message.board.tom.common.payloads.BlockingPayload;
+import iu.e510.message.board.tom.common.payloads.NonBlockingPayload;
 
 import java.util.List;
 import java.util.Map;
@@ -24,7 +23,7 @@ public interface DataManager {
 
     Set<String> getAllTopics();
 
-    void setConsistent(boolean consistency);
+    void setConsistency(boolean consistency);
 
     String getNodeId();
 
@@ -45,9 +44,9 @@ public interface DataManager {
     Set<String> addData(BaseBean dataBean) throws Exception;
 
 
-    DMBPost getPost(String clientID, String topic, int postID)throws Exception;
+    DMBPost getPost(String clientID, String topic, int postID) throws Exception;
 
-    List<DMBPost> getPosts(String clientID, String topic)throws Exception;
+    List<DMBPost> getPosts(String clientID, String topic) throws Exception;
 
     Message processPayload(BlockingPayload payload);
 

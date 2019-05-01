@@ -1,4 +1,4 @@
-package iu.e510.message.board.tom.common;
+package iu.e510.message.board.tom.common.payloads;
 
 import java.io.Serializable;
 

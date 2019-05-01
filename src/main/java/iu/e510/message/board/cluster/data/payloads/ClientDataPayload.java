@@ -2,8 +2,8 @@ package iu.e510.message.board.cluster.data.payloads;
 
 import iu.e510.message.board.cluster.data.DataManager;
 import iu.e510.message.board.cluster.data.beans.BaseBean;
-import iu.e510.message.board.tom.common.NonBlockingPayload;
-import iu.e510.message.board.tom.common.Payload;
+import iu.e510.message.board.tom.common.payloads.NonBlockingPayload;
+import iu.e510.message.board.tom.common.payloads.Payload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

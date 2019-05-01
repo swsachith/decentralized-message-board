@@ -2,7 +2,7 @@ package iu.e510.message.board.tom;
 
 import iu.e510.message.board.tom.common.LamportClock;
 import iu.e510.message.board.tom.common.Message;
-import iu.e510.message.board.tom.common.Payload;
+import iu.e510.message.board.tom.common.payloads.Payload;
 import iu.e510.message.board.tom.core.MessageHandler;
 import org.testng.Assert;
 import org.testng.annotations.AfterSuite;

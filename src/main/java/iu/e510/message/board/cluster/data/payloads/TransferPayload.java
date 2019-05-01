@@ -3,8 +3,8 @@ package iu.e510.message.board.cluster.data.payloads;
 import iu.e510.message.board.cluster.data.DataManager;
 import iu.e510.message.board.tom.MessageService;
 import iu.e510.message.board.tom.common.Message;
-import iu.e510.message.board.tom.common.NonBlockingPayload;
-import iu.e510.message.board.tom.common.Payload;
+import iu.e510.message.board.tom.common.payloads.NonBlockingPayload;
+import iu.e510.message.board.tom.common.payloads.Payload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +23,11 @@ public class TransferPayload extends Payload<String> implements NonBlockingPaylo
         String nodeToTalk = getContent();
         logger.info("Master asks me to talk to: " + nodeToTalk + " and transfer " +
                 "the relevant topics");
+
+        if (!dataManager.isConsistent()) {
+            logger.info("Server is now consistent!");
+            dataManager.setConsistency(true);
+        }
 
         TransferTopicsPayload transferTopicsPayload =
                 new TransferTopicsPayload(dataManager.getNodeId());

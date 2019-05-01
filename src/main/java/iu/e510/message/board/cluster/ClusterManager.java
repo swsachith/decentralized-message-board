@@ -5,7 +5,8 @@ import iu.e510.message.board.cluster.data.payloads.TransferPayload;
 import iu.e510.message.board.cluster.zk.ZKManager;
 import iu.e510.message.board.cluster.zk.ZKManagerImpl;
 import iu.e510.message.board.tom.MessageService;
-import iu.e510.message.board.tom.common.Payload;
+import iu.e510.message.board.tom.common.payloads.ConnectionFailure;
+import iu.e510.message.board.tom.common.payloads.Payload;
 import iu.e510.message.board.util.Config;
 import iu.e510.message.board.util.Constants;
 import org.apache.commons.lang3.SerializationUtils;
@@ -112,8 +113,8 @@ public class ClusterManager implements LeaderLatchListener {
         PathChildrenCacheListener listener = (curatorFramework, event) -> {
             if (event.getType() == PathChildrenCacheEvent.Type.CONNECTION_LOST ||
                     event.getType() == PathChildrenCacheEvent.Type.CONNECTION_SUSPENDED) {
-                messageService.send_unordered(new Payload("Network Partitioned"), messageService.getUrl(nodeID),
-                        MessageType.LOST_CONNECTION);
+                messageService.send_unordered(new ConnectionFailure("Connection lost or " +
+                        "suspended"), messageService.getUrl(nodeID));
                 return;
             }
             String eventNodeID = event.getData().getPath().substring(clusterParentZK.length() + 1);
