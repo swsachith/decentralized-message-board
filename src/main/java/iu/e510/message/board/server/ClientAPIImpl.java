@@ -75,7 +75,9 @@ public class ClientAPIImpl extends UnicastRemoteObject implements ClientAPI {
     @Override
     public DMBPost getPost(String clientID, String topic, int postID) throws RemoteException {
         try {
-            return dataManager.getPost(clientID, topic, postID);
+            DMBPost post = dataManager.getPost(clientID, topic, postID);
+            logger.info("Response: " + post.toString());
+            return post;
         } catch (Exception e) {
             throw new RemoteException("Unable to get post", e);
         }
@@ -86,10 +88,34 @@ public class ClientAPIImpl extends UnicastRemoteObject implements ClientAPI {
         try {
 
             List<DMBPost> posts = dataManager.getPosts(clientID, topic);
-            logger.info(posts.toString());
+            logger.info("Response: " + posts.toString());
             return posts;
         } catch (Exception e) {
             throw new RemoteException("Unable to get posts", e);
+        }
+    }
+
+    @Override
+    public List<DMBPost> searchPosts(String str) throws RemoteException {
+        try {
+
+            List<DMBPost> posts = dataManager.searchPosts(str);
+            logger.info("Response: " + posts.toString());
+            return posts;
+        } catch (Exception e) {
+            throw new RemoteException("Unable to serach posts", e);
+        }
+    }
+
+    @Override
+    public List<DMBPost> getTopPosts() throws RemoteException {
+        try {
+
+            List<DMBPost> posts = dataManager.getTopPosts();
+            logger.info("Response: " + posts.toString());
+            return posts;
+        } catch (Exception e) {
+            throw new RemoteException("Unable to get top posts", e);
         }
     }
 

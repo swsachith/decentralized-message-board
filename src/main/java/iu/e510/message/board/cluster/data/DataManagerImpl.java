@@ -231,6 +231,23 @@ public class DataManagerImpl implements DataManager {
         }
     }
 
+    @Override
+    public List<DMBPost> searchPosts(String str) throws Exception {
+        if (isConsistent()) {
+            return database.getPostsDataByTitleDescriptionArrayList(str);
+        } else {
+            throw new Exception("Server is inconsistent. Unable to serve searchPosts request!");
+        }
+    }
+
+    @Override
+    public List<DMBPost> getTopPosts() throws Exception {
+        if (isConsistent()) {
+            return database.getTopPostsDataByPopularityArrayList();
+        } else {
+            throw new Exception("Server is inconsistent. Unable to serve getTopPosts request!");
+        }
+    }
 
     /**
      * Synchronous/ blocking processing of a payload

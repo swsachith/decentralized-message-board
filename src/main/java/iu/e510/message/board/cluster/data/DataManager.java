@@ -48,6 +48,10 @@ public interface DataManager {
 
     List<DMBPost> getPosts(String clientID, String topic) throws Exception;
 
+    List<DMBPost> searchPosts(String str) throws Exception;
+
+    List<DMBPost> getTopPosts() throws Exception;
+
     Message processPayload(BlockingPayload payload);
 
     void queuePayload(NonBlockingPayload payload);

@@ -39,4 +39,8 @@ public interface ClientAPI extends Remote, Serializable {
      * @return
      */
     List<DMBPost> getPosts(String clientID, String topic) throws RemoteException;
+
+    List<DMBPost> searchPosts(String str) throws RemoteException;
+
+    List<DMBPost> getTopPosts() throws RemoteException;
 }
