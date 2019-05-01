@@ -4,6 +4,7 @@ import iu.e510.message.board.cluster.ClusterManager;
 import iu.e510.message.board.cluster.data.beans.BaseBean;
 import iu.e510.message.board.cluster.data.payloads.ClientDataPayload;
 import iu.e510.message.board.cluster.data.payloads.DataRequestPayload;
+import iu.e510.message.board.cluster.data.payloads.DataResponsePayload;
 import iu.e510.message.board.cluster.zk.ZKManager;
 import iu.e510.message.board.cluster.zk.ZKManagerImpl;
 import iu.e510.message.board.db.DMBDatabase;
@@ -133,7 +134,8 @@ public class DataManagerImpl implements DataManager {
             Message response = messageService.send_unordered(new DataRequestPayload(topic),
                     messageService.getUrl(node));
 
-            logger.debug("Received data: " + response.getPayload().getContent().toString());
+            logger.debug("Received data: " + new String(((DataResponsePayload)
+                    response.getPayload()).getContent()));
 
             if (response != null) return (byte[]) response.getPayload().getContent();
         }

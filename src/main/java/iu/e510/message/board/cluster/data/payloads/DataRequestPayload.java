@@ -22,7 +22,7 @@ public class DataRequestPayload extends Payload<String> implements BlockingPaylo
         logger.info("Data request received for topic: " + topic);
 
         byte[] data = dataManager.getDatabase().getPostsDataByTopicByteArray(topic);
-        logger.info("###### data from db: " + Arrays.toString(data));
+        logger.debug("Data from db: " + new String(data));
         return new Message(new DataResponsePayload(data), dataManager.getNodeId(),
                 dataManager.getLamportTimestamp(), true);
 
