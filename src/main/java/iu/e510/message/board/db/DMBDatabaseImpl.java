@@ -129,6 +129,60 @@ public class DMBDatabaseImpl implements DMBDatabase {
         return null;
     }
 
+
+
+    /**
+     * get posts with matching search for title or description as an array list from the database
+     */
+    @Override
+    public ArrayList<DMBPost> getPostsDataByTitleDescriptionArrayList(String pSearch) {
+        try {
+
+            String selectPostsByTopicQuery = "SELECT * FROM " + DMB_POSTS_TABLE +
+                    " WHERE " + DMB_POST_TITLE_COLUMN + " LIKE ? OR " +
+                    DMB_POST_DESCRIPTION_COLUMN + " LIKE ?";
+
+            PreparedStatement statement = connection.prepareStatement(selectPostsByTopicQuery);
+            statement.setString(1, "%" + pSearch + "%");
+            statement.setString(2, "%" + pSearch + "%");
+            ResultSet resultSet = statement.executeQuery();
+            ArrayList<DMBPost> dmbPostsArrayList = new ArrayList<>();
+            while (resultSet.next()) {
+                DMBPost postObject = getPostFromRS(resultSet);
+                dmbPostsArrayList.add(postObject);
+            }
+            logger.info("fetching searched posts");
+            return dmbPostsArrayList;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * get posts with matching search for title or description as an array list from the database
+     */
+    @Override
+    public ArrayList<DMBPost> getTopPostsDataByPopularityArrayList() {
+        try {
+                String selectAllPostsQuery = "SELECT * FROM " + DMB_POSTS_TABLE + " LIMIT 25" +
+                        " ORDER BY " + DMB_POST_UPVOTES_COLUMN + " DESC";
+
+                Statement statement = connection.createStatement();
+                ResultSet resultSet = statement.executeQuery(selectAllPostsQuery);
+                ArrayList<DMBPost> dmbPostsArrayList = new ArrayList<>();
+                while (resultSet.next()) {
+                    DMBPost postObject = getPostFromRS(resultSet);
+                    dmbPostsArrayList.add(postObject);
+                }
+                return dmbPostsArrayList;
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+
     private DMBPost getPostFromRS(ResultSet resultSet) throws SQLException {
         DMBPost postObject = new DMBPost();
         postObject.setPostId(resultSet.getInt(DMB_POST_ID_COLUMN));

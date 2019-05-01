@@ -115,13 +115,28 @@ public class TestDBInterface {
         Assert.assertEquals(posts.size(), 2);
     }
 
-    @Test (dependsOnMethods = { "testRemoveAndAddByteArray"})
+    @Test (dependsOnMethods = {"testRemoveAndAddByteArray"})
+    public void testSearchPostByTitleDescription(){
+        ArrayList<DMBPost> posts1 = db.getPostsDataByTitleDescriptionArrayList("Hello");
+        Assert.assertEquals(posts1.size(), 2);
+
+        ArrayList<DMBPost> posts2 = db.getPostsDataByTitleDescriptionArrayList("ello");
+        Assert.assertEquals(posts2.size(), 2);
+
+        ArrayList<DMBPost> posts3 = db.getPostsDataByTitleDescriptionArrayList("Hello IU");
+        Assert.assertEquals(posts3.size(), 1);
+
+        ArrayList<DMBPost> posts4 = db.getPostsDataByTitleDescriptionArrayList("none");
+        Assert.assertEquals(posts4.size(), 0);
+    }
+
+    @Test (dependsOnMethods = { "testSearchPostByTitleDescription"})
     public void testRemovePost(){
         ArrayList<DMBPost> posts1 = db.getPostsDataArrayList();
         db.removePostData(posts1.get(0).getPostId(), "downvoteowner1");
         ArrayList<DMBPost> posts2 = db.getPostsDataArrayList();
         Assert.assertEquals(posts2.size(), 2);
-        db.removePostData(posts1.get(0).getPostId(), "postowner1");
+        db.removePostData(posts2.get(0).getPostId(), posts2.get(0).getPostOwnerId());
         ArrayList<DMBPost> posts3 = db.getPostsDataArrayList();
         Assert.assertEquals(posts3.size(), 1);
         db.removePostData(posts1.get(0).getPostId(), "postowner1");
