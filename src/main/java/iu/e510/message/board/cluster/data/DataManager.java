@@ -4,7 +4,10 @@ import iu.e510.message.board.cluster.data.beans.BaseBean;
 import iu.e510.message.board.db.DMBDatabase;
 import iu.e510.message.board.db.model.DMBPost;
 import iu.e510.message.board.tom.MessageService;
+import iu.e510.message.board.tom.common.BlockingPayload;
 import iu.e510.message.board.tom.common.Message;
+import iu.e510.message.board.tom.common.NonBlockingPayload;
+import iu.e510.message.board.tom.common.Payload;
 
 import java.util.List;
 import java.util.Map;
@@ -46,9 +49,9 @@ public interface DataManager {
 
     List<DMBPost> getPosts(String clientID, String topic)throws Exception;
 
-    Message processMessage(Message message);
+    Message processPayload(BlockingPayload payload);
 
-    void queueMessage(Message message);
+    void queuePayload(NonBlockingPayload payload);
 
     int getLamportTimestamp();
 

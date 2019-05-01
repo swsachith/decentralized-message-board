@@ -2,6 +2,7 @@ package iu.e510.message.board.tom;
 
 import iu.e510.message.board.tom.common.LamportClock;
 import iu.e510.message.board.tom.common.Message;
+import iu.e510.message.board.tom.common.NonBlockingPayload;
 import iu.e510.message.board.tom.common.Payload;
 import iu.e510.message.board.tom.core.*;
 import iu.e510.message.board.util.Config;
@@ -29,12 +30,12 @@ public class MessageServiceImpl implements MessageService {
     private Config config;
     private ZContext context;
 
-    private BlockingQueue<Message> superNodeMsgQueue;
+    private BlockingQueue<NonBlockingPayload> superNodeMsgQueue;
 
 
     public MessageServiceImpl(String serverBindURI, String nodeID,
                               ConcurrentSkipListSet<Message> messageQueue,
-                              BlockingQueue<Message> superNodeMsgQueue) {
+                              BlockingQueue<NonBlockingPayload> superNodeMsgQueue) {
         config = new Config();
         clock = LamportClock.getClock();
         this.serverBindURI = serverBindURI;
@@ -133,7 +134,7 @@ public class MessageServiceImpl implements MessageService {
                     + message.getId() + " to myself");
             logger.debug("Saving message for async process: " + message.toString());
             try {
-                superNodeMsgQueue.put(message);
+                superNodeMsgQueue.put((NonBlockingPayload) message.getPayload());
             } catch (InterruptedException e) {
                 logger.error("Unable to access queue ", e);
                 throw new RuntimeException("Unable to access queue ", e);

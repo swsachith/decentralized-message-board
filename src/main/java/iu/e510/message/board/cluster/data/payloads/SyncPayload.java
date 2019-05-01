@@ -1,7 +1,7 @@
 package iu.e510.message.board.cluster.data.payloads;
 
 import iu.e510.message.board.cluster.data.DataManager;
-import iu.e510.message.board.tom.common.NonBlockingCall;
+import iu.e510.message.board.tom.common.NonBlockingPayload;
 import iu.e510.message.board.tom.common.Payload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.Set;
 
-public class SyncPayload extends Payload<Set<String>> implements NonBlockingCall {
+public class SyncPayload extends Payload<Set<String>> implements NonBlockingPayload {
     private static Logger logger = LoggerFactory.getLogger(SyncPayload.class);
 
     public SyncPayload(Set<String> content) {

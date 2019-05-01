@@ -1,13 +1,15 @@
 package iu.e510.message.board.cluster.data.payloads;
 
 import iu.e510.message.board.cluster.data.DataManager;
-import iu.e510.message.board.tom.common.BlockingCall;
+import iu.e510.message.board.tom.common.BlockingPayload;
 import iu.e510.message.board.tom.common.Message;
 import iu.e510.message.board.tom.common.Payload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DataRequestPayload extends Payload<String> implements BlockingCall {
+import java.util.Arrays;
+
+public class DataRequestPayload extends Payload<String> implements BlockingPayload {
     private static final Logger logger = LoggerFactory.getLogger(DataRequestPayload.class);
 
     public DataRequestPayload(String content) {
@@ -20,7 +22,7 @@ public class DataRequestPayload extends Payload<String> implements BlockingCall 
         logger.info("Data request received for topic: " + topic);
 
         byte[] data = dataManager.getDatabase().getPostsDataByTopicByteArray(topic);
-
+        logger.info("###### data from db: " + Arrays.toString(data));
         return new Message(new DataResponsePayload(data), dataManager.getNodeId(),
                 dataManager.getLamportTimestamp(), true);
 

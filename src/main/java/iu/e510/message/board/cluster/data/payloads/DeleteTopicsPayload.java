@@ -1,14 +1,14 @@
 package iu.e510.message.board.cluster.data.payloads;
 
 import iu.e510.message.board.cluster.data.DataManager;
-import iu.e510.message.board.tom.common.NonBlockingCall;
+import iu.e510.message.board.tom.common.NonBlockingPayload;
 import iu.e510.message.board.tom.common.Payload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
-public class DeleteTopicsPayload extends Payload<Set<String>> implements NonBlockingCall {
+public class DeleteTopicsPayload extends Payload<Set<String>> implements NonBlockingPayload {
     private static Logger logger = LoggerFactory.getLogger(DeleteTopicsPayload.class);
 
     public DeleteTopicsPayload(Set<String> content) {

@@ -38,7 +38,7 @@ public class DataManagerImpl implements DataManager {
     private String zkMyTopicStore;
 
     private MessageService messageService;
-    private BlockingQueue<Message> superNodeMsgQueue;
+    private BlockingQueue<NonBlockingPayload> superNodeMsgQueue;
     private MesssageExecutor messsageExecutor;
 
     private AtomicBoolean consistent;
@@ -51,7 +51,7 @@ public class DataManagerImpl implements DataManager {
 
 
     public DataManagerImpl(String nodeID, MessageService messageService,
-                           BlockingQueue<Message> superNodeMsgQueue,
+                           BlockingQueue<NonBlockingPayload> superNodeMsgQueue,
                            ClusterManager clusterManager, DMBDatabase database,
                            ConcurrentSkipListSet<Message> messageQueue) throws Exception {
         logger.info("Initializing the Data Manager!");
@@ -121,10 +121,16 @@ public class DataManagerImpl implements DataManager {
 
         logger.debug("Requesting data for: " + topic + " from: " + nodes);
         for (String node : nodes) {
+            if (node.equals(myNodeID)) {
+                continue;
+            }
             logger.debug("Talking to " + node);
 
             Message response = messageService.send_unordered(new DataRequestPayload(topic),
                     messageService.getUrl(node));
+
+            logger.debug("Received data: " + response.getPayload().getContent().toString());
+
 
             if (response != null) return (byte[]) response.getPayload().getContent();
         }
@@ -217,21 +223,17 @@ public class DataManagerImpl implements DataManager {
      * Synchronous/ blocking processing of a message
      */
     @Override
-    public Message processMessage(Message message) {
-        logger.debug("Processing message: " + message.toString());
+    public Message processPayload(BlockingPayload payload) {
+        logger.debug("Processing message: " + payload);
 
-        if (message instanceof BlockingCall) {
-            return ((BlockingCall) message).process(this);
-        } else {
-            throw new RuntimeException("Unknown message type for sync process: " + message);
-        }
+        return payload.process(this);
     }
 
     @Override
-    public void queueMessage(Message message) {
-        logger.debug("Saving message for async process: " + message.toString());
+    public void queuePayload(NonBlockingPayload payload) {
+        logger.debug("Saving message for async process: " + payload);
         try {
-            superNodeMsgQueue.put(message);
+            superNodeMsgQueue.put(payload);
         } catch (InterruptedException e) {
             logger.error("Unable to access queue ", e);
             throw new RuntimeException("Unable to access queue ", e);
@@ -274,19 +276,12 @@ public class DataManagerImpl implements DataManager {
         public void run() {
             while (running) {
                 try {
-                    Message message = superNodeMsgQueue.take();
-                    logger.info("Server is inconsistent");
+                    NonBlockingPayload payload = superNodeMsgQueue.take();
                     setConsistent(false);
 
-                    if (message instanceof NonBlockingCall) {
-                        ((NonBlockingCall) message).process(dataManager);
-                    }
-                    else {
-                        throw new RuntimeException("Unknown message type: " + message);
-                    }
+                    payload.process(dataManager);
 
                     setConsistent(true);
-                    logger.info("Server consistent again!");
 
                 } catch (InterruptedException e) {
                     logger.error("Unable to access the queue: ", e);
@@ -332,14 +327,15 @@ public class DataManagerImpl implements DataManager {
         }
 
         private Message processUnicastMessage(Message message) {
-            logger.info("Received message: " + message.getPayload() + " from: "
-                    + message.getNodeID());
+            Payload payload = message.getPayload();
 
-            if (message instanceof NonBlockingCall) {
-                queueMessage(message);
+            logger.info("Received message: " + payload + " from: " + message.getNodeID());
+
+            if (payload instanceof NonBlockingPayload) {
+                queuePayload((NonBlockingPayload) payload);
                 return null;
             } else {
-                return processMessage(message);
+                return processPayload((BlockingPayload) payload);
             }
         }
 
@@ -351,7 +347,7 @@ public class DataManagerImpl implements DataManager {
                         + " from: " + message.getNodeID());
                 message.setId(message.getRelease());
 
-                queueMessage(message);
+                queuePayload((NonBlockingPayload) message.getPayload());
 
                 messageQueue.remove(message);
                 logger.debug("Message queue size: " + messageQueue.size());

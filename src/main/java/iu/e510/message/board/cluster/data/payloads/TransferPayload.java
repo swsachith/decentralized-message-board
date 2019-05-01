@@ -3,12 +3,12 @@ package iu.e510.message.board.cluster.data.payloads;
 import iu.e510.message.board.cluster.data.DataManager;
 import iu.e510.message.board.tom.MessageService;
 import iu.e510.message.board.tom.common.Message;
-import iu.e510.message.board.tom.common.NonBlockingCall;
+import iu.e510.message.board.tom.common.NonBlockingPayload;
 import iu.e510.message.board.tom.common.Payload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TransferPayload extends Payload<String> implements NonBlockingCall {
+public class TransferPayload extends Payload<String> implements NonBlockingPayload {
     private static Logger logger = LoggerFactory.getLogger(TransferPayload.class);
 
     public TransferPayload(String content) {
@@ -29,10 +29,10 @@ public class TransferPayload extends Payload<String> implements NonBlockingCall 
 
         MessageService messageService = dataManager.getMessageService();
 
-        Message response = messageService.send_unordered(transferTopicsPayload,
+        Message syncResponse = messageService.send_unordered(transferTopicsPayload,
                 messageService.getUrl(nodeToTalk));
 
-        dataManager.queueMessage(response);
+        dataManager.queuePayload((NonBlockingPayload) syncResponse.getPayload());
     }
 
     @Override

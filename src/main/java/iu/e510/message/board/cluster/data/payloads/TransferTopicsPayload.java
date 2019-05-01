@@ -1,14 +1,18 @@
 package iu.e510.message.board.cluster.data.payloads;
 
 import iu.e510.message.board.cluster.data.DataManager;
-import iu.e510.message.board.tom.common.BlockingCall;
+import iu.e510.message.board.tom.common.BlockingPayload;
 import iu.e510.message.board.tom.common.Message;
 import iu.e510.message.board.tom.common.Payload;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Set;
 
-public class TransferTopicsPayload extends Payload<String> implements BlockingCall {
+public class TransferTopicsPayload extends Payload<String> implements BlockingPayload {
+    private static final Logger logger = LoggerFactory.getLogger( TransferTopicsPayload.class );
+
     public TransferTopicsPayload(String content) {
         super(content);
     }
@@ -25,13 +29,13 @@ public class TransferTopicsPayload extends Payload<String> implements BlockingCa
         int timestamp = dataManager.getLamportTimestamp();
 
         if (!delete.isEmpty()) {
-            Message delTopics = new Message(new DeleteTopicsPayload(delete), nodeId, timestamp,
-                    true);
-            dataManager.queueMessage(delTopics);
+            logger.debug("Deleting topics: " + delete);
+            dataManager.queuePayload(new DeleteTopicsPayload(delete));
         }
 
         Set<String> transfer = transferTopics.get("transfer");
 
+        logger.debug("Dransferring topics: " + transfer);
         return new Message(new SyncPayload(transfer), nodeId, timestamp, true);
     }
 
