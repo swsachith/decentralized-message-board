@@ -137,7 +137,7 @@ public class DataManagerImpl implements DataManager {
             logger.debug("Received data: " + new String(((DataResponsePayload)
                     response.getPayload()).getContent()));
 
-            if (response != null) return (byte[]) response.getPayload().getContent();
+            return (byte[]) response.getPayload().getContent();
         }
 
         return null;
