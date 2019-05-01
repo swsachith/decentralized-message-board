@@ -31,4 +31,8 @@ public class Payload<T> implements Serializable {
                 "content=" + content +
                 '}';
     }
+
+    public boolean isEmpty() {
+        return content == null;
+    }
 }

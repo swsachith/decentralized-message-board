@@ -19,6 +19,8 @@ public class ReplyVoteBean extends BaseBean {
     public void processBean(DMBDatabase database) {
         if (vote) {
             database.upVoteReply(replyID, getClientID());
+        } else {
+            database.downVoteReply(replyID, getClientID());
         }
     }
 

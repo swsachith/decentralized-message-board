@@ -2,7 +2,7 @@ package iu.e510.message.board.tom;
 
 import iu.e510.message.board.tom.common.LamportClock;
 import iu.e510.message.board.tom.common.Message;
-import iu.e510.message.board.tom.common.MessageType;
+import iu.e510.message.board.tom.common.NonBlockingPayload;
 import iu.e510.message.board.tom.common.Payload;
 import iu.e510.message.board.tom.core.*;
 import iu.e510.message.board.util.Config;
@@ -30,12 +30,12 @@ public class MessageServiceImpl implements MessageService {
     private Config config;
     private ZContext context;
 
-    private BlockingQueue<Message> superNodeMsgQueue;
+    private BlockingQueue<NonBlockingPayload> superNodeMsgQueue;
 
 
     public MessageServiceImpl(String serverBindURI, String nodeID,
                               ConcurrentSkipListSet<Message> messageQueue,
-                              BlockingQueue<Message> superNodeMsgQueue) {
+                              BlockingQueue<NonBlockingPayload> superNodeMsgQueue) {
         config = new Config();
         clock = LamportClock.getClock();
         this.serverBindURI = serverBindURI;
@@ -59,12 +59,12 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public void send_ordered(Payload message, Set<String> recipients, MessageType messageType) {
+    public void send_ordered(Payload message, Set<String> recipients) {
         // add yourself to the recipient list
         recipients.add(nodeID);
         // multicast the message to all the recipients
         int clock = this.clock.incrementAndGet();
-        Message msg = new Message(message, nodeID, clock, false, messageType);
+        Message msg = new Message(message, nodeID, clock, false);
         msg.setRecipients(recipients);
         for (String recipient : recipients) {
             Message response = messageSender.sendMessage(msg, getUrl(recipient),
@@ -86,9 +86,9 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public Message send_unordered(Payload message, String recipient, MessageType messageType) {
+    public Message send_unordered(Payload message, String recipient) {
         int clock = this.clock.incrementAndGet();
-        Message msg = new Message(message, nodeID, clock, true, messageType);
+        Message msg = new Message(message, nodeID, clock, true);
         Message response = messageSender.sendMessage(msg, recipient, this.clock.get());
 
         // if response received, update the clock
@@ -123,7 +123,7 @@ public class MessageServiceImpl implements MessageService {
         @Override
         public void deliverReleaseMessage(Message message) {
             Message releaseMessage = new Message(message.getPayload(), nodeID,
-                    clock.incrementAndGet(), false, message.getMessageType());
+                    clock.incrementAndGet(), false);
             releaseMessage.setRelease(message.getId());
 
             Set<String> recipients = message.getRecipients();
@@ -134,7 +134,7 @@ public class MessageServiceImpl implements MessageService {
                     + message.getId() + " to myself");
             logger.debug("Saving message for async process: " + message.toString());
             try {
-                superNodeMsgQueue.put(message);
+                superNodeMsgQueue.put((NonBlockingPayload) message.getPayload());
             } catch (InterruptedException e) {
                 logger.error("Unable to access queue ", e);
                 throw new RuntimeException("Unable to access queue ", e);
