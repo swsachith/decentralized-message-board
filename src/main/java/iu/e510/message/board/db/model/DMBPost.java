@@ -3,6 +3,8 @@ package iu.e510.message.board.db.model;
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 public class DMBPost implements Serializable {
     private int mPostId;
@@ -127,6 +129,8 @@ public class DMBPost implements Serializable {
                 ", downvotes: " + mPostDownvotes + "\n" +
                 "\tposted at: " + ts.toString() + "\n" +
                 "Replies: \n");
+
+        Collections.sort(mPostReplies, Comparator.comparingLong(DMBReply::getReplyTimeStamp));
         for (DMBReply mPostReply : mPostReplies ) {
             postString.append("\t" + mPostReply.toString() + "\n");
         }
