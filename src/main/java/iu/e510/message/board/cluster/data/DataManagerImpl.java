@@ -199,7 +199,7 @@ public class DataManagerImpl implements DataManager {
 
     @Override
     public Map<String, Set<String>> getTransferTopics(String newNodeID) {
-        HashSet<String> myTopics = getAllTopics();
+        HashSet<String> myTopics = new HashSet<>(getAllTopics());
         Map<String, Set<String>> transferTopics = clusterManager.getTransferTopics(myNodeID, newNodeID, myTopics);
         // get topics to be deleted (myTopics - myNewTopics)
         myTopics.removeAll(transferTopics.get("oldNode"));
