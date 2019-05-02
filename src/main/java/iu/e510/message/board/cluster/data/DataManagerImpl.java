@@ -36,7 +36,7 @@ public class DataManagerImpl implements DataManager {
     private ReadWriteLock lock;
     private Lock readLock;
     private Lock writeLock;
-    private HashSet<String> myTopics;
+    private volatile HashSet<String> myTopics;
     private ZKManager zkManager;
     private Config config;
     private String myNodeID;
@@ -328,8 +328,8 @@ public class DataManagerImpl implements DataManager {
                 try {
                     NonBlockingPayload payload = superNodeMsgQueue.take();
                     setConsistency(false);
-                    logger.info("*****************************");
-                    logger.info(dataManager.getAllTopics().toString());
+//                    logger.info("*****************************");
+//                    logger.info(dataManager.getAllTopics().toString());
                     payload.process(dataManager);
 
                     setConsistency(true);

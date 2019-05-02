@@ -1,8 +1,8 @@
 package iu.e510.message.board.cluster.data.payloads;
 
 import iu.e510.message.board.cluster.data.DataManager;
-import iu.e510.message.board.tom.common.payloads.BlockingPayload;
 import iu.e510.message.board.tom.common.Message;
+import iu.e510.message.board.tom.common.payloads.BlockingPayload;
 import iu.e510.message.board.tom.common.payloads.Payload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,13 +29,14 @@ public class TransferTopicsPayload extends Payload<String> implements BlockingPa
         int timestamp = dataManager.getLamportTimestamp();
 
         if (!delete.isEmpty()) {
-            logger.debug("Deleting topics: " + delete);
+            logger.info("Deleting topics: " + delete);
             dataManager.queuePayload(new DeleteTopicsPayload(delete));
         }
+        logger.info("Current topics: " + dataManager.getAllTopics());
 
         Set<String> transfer = transferTopics.get("transfer");
 
-        logger.debug("Transferring topics: " + transfer);
+        logger.info("Node " + nodeId + " needs to transfer topics: " + transfer);
         return new Message(new SyncPayload(transfer), nodeId, timestamp, true);
     }
 

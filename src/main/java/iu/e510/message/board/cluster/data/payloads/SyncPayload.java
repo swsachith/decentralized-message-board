@@ -33,6 +33,7 @@ public class SyncPayload extends Payload<Set<String>> implements NonBlockingPayl
                     logger.debug("Received data: " + Arrays.toString(data));
 
                     // add data to topics set and zk
+                    logger.info("Adding topic: " + topic);
                     dataManager.addTopicData(topic);
                     dataManager.getDatabase().addPostsDataFromByteArray(data);
                 } catch (Exception e) {
@@ -41,6 +42,8 @@ public class SyncPayload extends Payload<Set<String>> implements NonBlockingPayl
 
             }
         }
+
+        logger.info("Sync complete. Current topics: " + dataManager.getAllTopics());
     }
 
     @Override

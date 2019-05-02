@@ -28,6 +28,8 @@ public class ClientDataPayload extends Payload<BaseBean> implements NonBlockingP
 
         // process payload data bean and store the data in the db
         bean.processBean(dataManager.getDatabase());
+
+        logger.info("Current topics: " + dataManager.getAllTopics());
     }
 
     @Override

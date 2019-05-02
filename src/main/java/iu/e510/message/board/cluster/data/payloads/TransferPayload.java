@@ -37,6 +37,7 @@ public class TransferPayload extends Payload<String> implements NonBlockingPaylo
         Message syncResponse = messageService.send_unordered(transferTopicsPayload,
                 messageService.getUrl(nodeToTalk));
 
+        logger.info("Need to sync topics: " + syncResponse.getPayload().getContent());
         dataManager.queuePayload((NonBlockingPayload) syncResponse.getPayload());
     }
 
