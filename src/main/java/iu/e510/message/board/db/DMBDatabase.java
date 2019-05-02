@@ -20,7 +20,7 @@ public interface DMBDatabase {
     DMBPost getPostDataByPostId(int pId);
     ArrayList<DMBPost> getPostsDataArrayList();
     ArrayList<DMBPost> getPostsDataByTopicArrayList(String pTopic);
-    ArrayList<DMBPost> getPostsDataByTitleDescriptionArrayList(String pSearch);
+    ArrayList<DMBPost> getPostsDataByTitleDescriptionArrayList(String topic, String pSearch);
     ArrayList<DMBPost> getTopPostsDataByPopularityArrayList();
     void addPostData(String pTitle, String pTopic, String pOwner, String pDescription);
     void removePostData(int pId, String pOwner);

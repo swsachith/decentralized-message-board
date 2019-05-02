@@ -117,16 +117,16 @@ public class TestDBInterface {
 
     @Test (dependsOnMethods = {"testRemoveAndAddByteArray"})
     public void testSearchPostByTitleDescription(){
-        ArrayList<DMBPost> posts1 = db.getPostsDataByTitleDescriptionArrayList("Hello");
-        Assert.assertEquals(posts1.size(), 2);
+        ArrayList<DMBPost> posts1 = db.getPostsDataByTitleDescriptionArrayList("IU","Hello");
+        Assert.assertEquals(posts1.size(), 1);
 
-        ArrayList<DMBPost> posts2 = db.getPostsDataByTitleDescriptionArrayList("ello");
-        Assert.assertEquals(posts2.size(), 2);
+        ArrayList<DMBPost> posts2 = db.getPostsDataByTitleDescriptionArrayList("Bloomington","ello");
+        Assert.assertEquals(posts2.size(), 1);
 
-        ArrayList<DMBPost> posts3 = db.getPostsDataByTitleDescriptionArrayList("Hello IU");
+        ArrayList<DMBPost> posts3 = db.getPostsDataByTitleDescriptionArrayList("IU","Hello IU");
         Assert.assertEquals(posts3.size(), 1);
 
-        ArrayList<DMBPost> posts4 = db.getPostsDataByTitleDescriptionArrayList("none");
+        ArrayList<DMBPost> posts4 = db.getPostsDataByTitleDescriptionArrayList("IU","none");
         Assert.assertEquals(posts4.size(), 0);
     }
 

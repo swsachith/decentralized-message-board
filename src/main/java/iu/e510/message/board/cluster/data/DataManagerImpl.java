@@ -236,9 +236,9 @@ public class DataManagerImpl implements DataManager {
     }
 
     @Override
-    public List<DMBPost> searchPosts(String str) throws Exception {
+    public List<DMBPost> searchPosts(String clientID, String topic, String str) throws Exception {
         if (isConsistent()) {
-            return database.getPostsDataByTitleDescriptionArrayList(str);
+            return database.getPostsDataByTitleDescriptionArrayList(topic, str);
         } else {
             throw new Exception("Server is inconsistent. Unable to serve searchPosts request!");
         }

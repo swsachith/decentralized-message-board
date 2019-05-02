@@ -154,6 +154,48 @@ public class ClientServiceImpl implements ClientService {
         return results;
     }
 
+    @Override
+    public List<DMBPost> searchPosts(String topic, String searchString) {
+        List<DMBPost> results = new ArrayList<>();
+        int i = 0;
+        while (i < serverRetries) {
+            try {
+                // if the cache has a topic client mapping, use that. Else use the current clientAPI
+                ClientAPI topicClient = topicClientMap.get(topic);
+                if (topicClient != null) {
+                    try {
+                        results = topicClient.searchPosts(clientID, topic, searchString);
+
+                        if (!results.isEmpty()) {
+                            return results;
+                        }
+                    } catch (RemoteException e) {
+                        logger.debug("Cache miss for the topic: " + topic);
+                        topicClientMap.remove(topic);
+                    }
+                } else {
+                    Set<String> nodes = clientAPI.getNodes(topic);
+                    if (nodes != null) {
+                        topicClientMap.remove(topic);
+                        // if the contacted node does not have that topic, retry with the retry list.
+                        ClientAPI topicClientAPI = getClientAPI(nodes);
+                        results = topicClientAPI.searchPosts(clientID, topic, searchString);
+                        if (!results.isEmpty()) {
+                            topicClientMap.put(topic, topicClientAPI);
+                            return results;
+                        }
+                    }
+                }
+            } catch (RemoteException e) {
+                serverConnectionRefresh();
+                logger.debug("Retrying a different super node " + e.getMessage());
+            } finally {
+                i++;
+            }
+        }
+        return results;
+    }
+
     private boolean handleClientRequest(ClientAPIMethodsEnum methodName, Object[] parameters) throws Exception {
         Method method;
         Set<String> results = null;

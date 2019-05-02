@@ -96,10 +96,10 @@ public class ClientAPIImpl extends UnicastRemoteObject implements ClientAPI {
     }
 
     @Override
-    public List<DMBPost> searchPosts(String str) throws RemoteException {
+    public List<DMBPost> searchPosts(String clientID, String topic, String str) throws RemoteException {
         try {
 
-            List<DMBPost> posts = dataManager.searchPosts(str);
+            List<DMBPost> posts = dataManager.searchPosts(clientID, topic, str);
             logger.info("Response: " + posts.toString());
             return posts;
         } catch (Exception e) {

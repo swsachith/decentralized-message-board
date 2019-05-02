@@ -29,4 +29,6 @@ public interface ClientService {
      * @return
      */
     List<DMBPost> getPosts(String topic);
+
+    List<DMBPost> searchPosts(String topic, String str);
 }

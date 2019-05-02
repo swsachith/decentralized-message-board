@@ -135,16 +135,17 @@ public class DMBDatabaseImpl implements DMBDatabase {
      * get posts with matching search for title or description as an array list from the database
      */
     @Override
-    public ArrayList<DMBPost> getPostsDataByTitleDescriptionArrayList(String pSearch) {
+    public ArrayList<DMBPost> getPostsDataByTitleDescriptionArrayList(String topic, String pSearch) {
         try {
 
             String selectPostsByTopicQuery = "SELECT * FROM " + DMB_POSTS_TABLE +
-                    " WHERE " + DMB_POST_TITLE_COLUMN + " LIKE ? OR " +
-                    DMB_POST_DESCRIPTION_COLUMN + " LIKE ?";
+                    " WHERE " + DMB_POST_TOPIC_COLUMN + " = ? AND (" + DMB_POST_TITLE_COLUMN + " LIKE ? OR " +
+                    DMB_POST_DESCRIPTION_COLUMN + " LIKE ? )";
 
             PreparedStatement statement = connection.prepareStatement(selectPostsByTopicQuery);
-            statement.setString(1, "%" + pSearch + "%");
+            statement.setString(1, topic);
             statement.setString(2, "%" + pSearch + "%");
+            statement.setString(3, "%" + pSearch + "%");
             ResultSet resultSet = statement.executeQuery();
             ArrayList<DMBPost> dmbPostsArrayList = new ArrayList<>();
             while (resultSet.next()) {

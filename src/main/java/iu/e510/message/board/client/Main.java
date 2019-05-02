@@ -107,10 +107,20 @@ public class Main {
                     System.out.println("No such post found!");
                 }
                 break;
+            case "searchpost":
+                if (tokens.length != 3) {
+                    wrongFormat = true;
+                    break;
+                }
+                List<DMBPost> searchPosts = clientService.searchPosts(tokens[1].trim().toLowerCase(), tokens[2].trim().toLowerCase());
+                for (DMBPost searchPost : searchPosts) {
+                    System.out.println(searchPost);
+                }
+                break;
             default:
                 break;
         }
-        if (!(method.equals("getposts") || method.equals("getpost"))) {
+        if (!(method.equals("getposts") || method.equals("getpost") || method.equals("searchpost"))) {
             if (successful) {
                 System.out.println("The request was successfully executed");
             } else {
