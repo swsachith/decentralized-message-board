@@ -117,7 +117,12 @@ public class DataManagerImpl implements DataManager {
 
     @Override
     public boolean hasData(String path) {
-        return myTopics.contains(path);
+        try {
+            readLock.lock();
+            return myTopics.contains(path);
+        } finally {
+            readLock.unlock();
+        }
     }
 
     @Override
@@ -139,6 +144,9 @@ public class DataManagerImpl implements DataManager {
             }
 
             byte[] content = ((DataResponsePayload) response.getPayload()).getContent();
+            if (content == null) {
+                continue;
+            }
             logger.debug("Received data: " + new String(content));
 
             return content;
@@ -320,7 +328,8 @@ public class DataManagerImpl implements DataManager {
                 try {
                     NonBlockingPayload payload = superNodeMsgQueue.take();
                     setConsistency(false);
-
+                    logger.info("*****************************");
+                    logger.info(dataManager.getAllTopics().toString());
                     payload.process(dataManager);
 
                     setConsistency(true);
