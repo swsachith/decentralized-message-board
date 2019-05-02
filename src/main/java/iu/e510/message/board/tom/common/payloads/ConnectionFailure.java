@@ -17,6 +17,9 @@ public class ConnectionFailure extends Payload<String> implements BlockingPayloa
                 "inconsistent until connection!");
         dataManager.setConsistency(false);
 
+        logger.warn("Resetting my topics");
+        dataManager.resetTopics();
+
         logger.warn("Truncating data tables! ");
         dataManager.getDatabase().truncateTables();
 

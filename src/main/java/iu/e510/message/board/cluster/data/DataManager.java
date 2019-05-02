@@ -61,4 +61,6 @@ public interface DataManager {
     MessageService getMessageService();
 
     DMBDatabase getDatabase();
+
+    void resetTopics();
 }

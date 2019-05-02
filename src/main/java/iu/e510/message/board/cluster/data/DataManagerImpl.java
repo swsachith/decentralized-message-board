@@ -134,10 +134,14 @@ public class DataManagerImpl implements DataManager {
             Message response = messageService.send_unordered(new DataRequestPayload(topic),
                     messageService.getUrl(node));
 
-            logger.debug("Received data: " + new String(((DataResponsePayload)
-                    response.getPayload()).getContent()));
+            if (response == null) {
+                continue;
+            }
 
-            return (byte[]) response.getPayload().getContent();
+            byte[] content = ((DataResponsePayload) response.getPayload()).getContent();
+            logger.debug("Received data: " + new String(content));
+
+            return content;
         }
 
         return null;
@@ -202,7 +206,7 @@ public class DataManagerImpl implements DataManager {
     public Set<String> addData(BaseBean dataBean) throws Exception {
         Set<String> nodes = getNodeIdsForTopic(dataBean.getTopic());
 
-        if (nodes.contains(myNodeID) && isConsistent()){
+        if (nodes.contains(myNodeID) && isConsistent()) {
             logger.info("Sending multicast: " + dataBean.toString());
             messageService.send_ordered(new ClientDataPayload(dataBean), nodes);
 
@@ -290,6 +294,11 @@ public class DataManagerImpl implements DataManager {
         return database;
     }
 
+    @Override
+    public void resetTopics() {
+        logger.debug("Resetting my topics");
+        myTopics.clear();
+    }
 
     class MesssageExecutor extends Thread {
         private boolean running = true;
@@ -324,10 +333,12 @@ public class DataManagerImpl implements DataManager {
             }
         }
     }
+
     protected class MessageHandlerImpl implements MessageHandler {
         private Logger logger = LoggerFactory.getLogger(MessageHandlerImpl.class);
         private String nodeID;
         public ConcurrentSkipListSet<Message> messageQueue;
+
         public MessageHandlerImpl(String nodeID, ConcurrentSkipListSet<Message> messageQueue) {
             this.nodeID = nodeID;
             this.messageQueue = messageQueue;
