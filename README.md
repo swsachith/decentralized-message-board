@@ -19,7 +19,7 @@ java -jar iu.e510.message.board-rmiRegistry.jar
 ##### Servers
 From the <source_dir>/bin/lib, run
 ```bash
-java -jar iu.e510.message.board-server.jar
+java -jar iu.e510.message.board-server.jar -host <localhost> -port <port>
 ```
 
 You can provide custom configurations via,

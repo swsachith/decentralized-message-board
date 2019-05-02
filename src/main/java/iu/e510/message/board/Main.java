@@ -18,7 +18,7 @@ public class Main {
         CommandLine cmd = commandLineParser.parse(options, args);
 
         String host = cmd.getOptionValue("host", "localhost");
-        String port = cmd.getOptionValue("port", "8086");
+        String port = cmd.getOptionValue("port", "8088");
         String nodeID = String.format("%s:%s", host, port);
 
         Server server = new Server(nodeID);
