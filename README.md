@@ -1,4 +1,6 @@
 # decentralized-message-board
+## Information on the design and related work can be seen in this paper:
+[Project Report](https://drive.google.com/open?id=1SyL0f0pMw0tC_QSKNrt6as2uY_DbXk7W)
 
 ## How to Run
 
